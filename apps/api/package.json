@@ -18,7 +18,12 @@
     "axios": "^1.7.2",
     "node-cron": "^3.0.3",
     "dotenv": "^16.4.5",
-    "winston": "^3.13.0"
+    "winston": "^3.13.0",
+    "bcrypt": "^5.1.1",
+    "jsonwebtoken": "^9.0.2",
+    "express-rate-limit": "^7.1.5",
+    "express-validator": "^7.0.1",
+    "cookie-parser": "^1.4.6"
   },
   "devDependencies": {
     "nodemon": "^3.1.4"
