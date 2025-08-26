@@ -2,6 +2,7 @@ const { chromium } = require("playwright");
 const cheerio = require("cheerio");
 const database = require("../db/database");
 const winston = require("winston");
+const DelistingDetectionService = require("../services/DelistingDetectionService");
 
 // Configure logger
 const logger = winston.createLogger({
@@ -19,9 +20,10 @@ const logger = winston.createLogger({
 });
 
 class Property24Scraper {
-  constructor() {
+  constructor(listingType = 'sale') {
     this.baseUrl = "https://www.property24.com";
-    this.searchUrl = "https://www.property24.com/for-sale";
+    this.listingType = listingType;
+    this.searchUrl = `https://www.property24.com/${this.listingType === 'rent' ? 'to-rent' : 'for-sale'}`;
     this.source = "property24";
     this.defaultLocation = {
       city: "Somerset West",
@@ -87,36 +89,37 @@ class Property24Scraper {
      * @returns {string[]} Array of URLs to try, or empty if no special case
      */
     getSpecialCaseUrls(citySlug, provinceSlug, p24_id) {
+        const urlSegment = this.listingType === 'rent' ? 'to-rent' : 'for-sale';
         const specialCases = {
             // Somerset West - verified working patterns
             'somerset-west_western-cape': [
-                `${this.baseUrl}/for-sale/${citySlug}/${provinceSlug}/390`,
-                `${this.baseUrl}/for-sale/${citySlug}/${provinceSlug}`,
-                `${this.baseUrl}/for-sale/${provinceSlug}/${citySlug}/390`,
+                `${this.baseUrl}/${urlSegment}/${citySlug}/${provinceSlug}/390`,
+                `${this.baseUrl}/${urlSegment}/${citySlug}/${provinceSlug}`,
+                `${this.baseUrl}/${urlSegment}/${provinceSlug}/${citySlug}/390`,
             ],
             // Cape Town - multiple area patterns
             'cape-town_western-cape': [
-                `${this.baseUrl}/for-sale/${citySlug}/${provinceSlug}/32`,
-                `${this.baseUrl}/for-sale/${citySlug}/${provinceSlug}`,
-                `${this.baseUrl}/for-sale/${provinceSlug}/${citySlug}/32`,
+                `${this.baseUrl}/${urlSegment}/${citySlug}/${provinceSlug}/32`,
+                `${this.baseUrl}/${urlSegment}/${citySlug}/${provinceSlug}`,
+                `${this.baseUrl}/${urlSegment}/${provinceSlug}/${citySlug}/32`,
             ],
             // Johannesburg - major metro patterns
             'johannesburg_gauteng': [
-                `${this.baseUrl}/for-sale/${citySlug}/${provinceSlug}/7`,
-                `${this.baseUrl}/for-sale/${citySlug}/${provinceSlug}`,
-                `${this.baseUrl}/for-sale/${provinceSlug}/${citySlug}/7`,
+                `${this.baseUrl}/${urlSegment}/${citySlug}/${provinceSlug}/7`,
+                `${this.baseUrl}/${urlSegment}/${citySlug}/${provinceSlug}`,
+                `${this.baseUrl}/${urlSegment}/${provinceSlug}/${citySlug}/7`,
             ],
             // Pretoria patterns
             'pretoria_gauteng': [
-                `${this.baseUrl}/for-sale/${citySlug}/${provinceSlug}/9`,
-                `${this.baseUrl}/for-sale/${citySlug}/${provinceSlug}`,
-                `${this.baseUrl}/for-sale/${provinceSlug}/${citySlug}/9`,
+                `${this.baseUrl}/${urlSegment}/${citySlug}/${provinceSlug}/9`,
+                `${this.baseUrl}/${urlSegment}/${citySlug}/${provinceSlug}`,
+                `${this.baseUrl}/${urlSegment}/${provinceSlug}/${citySlug}/9`,
             ],
             // Durban patterns
             'durban_kwazulu-natal': [
-                `${this.baseUrl}/for-sale/${citySlug}/kwazulu-natal/22`,
-                `${this.baseUrl}/for-sale/${citySlug}/kwazulu-natal`,
-                `${this.baseUrl}/for-sale/kwazulu-natal/${citySlug}/22`,
+                `${this.baseUrl}/${urlSegment}/${citySlug}/kwazulu-natal/22`,
+                `${this.baseUrl}/${urlSegment}/${citySlug}/kwazulu-natal`,
+                `${this.baseUrl}/${urlSegment}/kwazulu-natal/${citySlug}/22`,
             ],
             // Add more known working patterns as discovered
         };
@@ -126,7 +129,7 @@ class Property24Scraper {
         
         // If we have a specific P24 ID, prioritize that in the URL patterns
         if (p24_id && urls.length > 0) {
-            const withId = `${this.baseUrl}/for-sale/${citySlug}/${provinceSlug}/${p24_id}`;
+            const withId = `${this.baseUrl}/${urlSegment}/${citySlug}/${provinceSlug}/${p24_id}`;
             return [withId, ...urls];
         }
         
@@ -141,6 +144,7 @@ class Property24Scraper {
      * @returns {string[]} Array of URLs to try in priority order
      */
     generateUrlPatterns(citySlug, provinceSlug, p24_id) {
+        const urlSegment = this.listingType === 'rent' ? 'to-rent' : 'for-sale';
         const citySearch = citySlug.replace(/-/g, '+');
         const provinceSearch = provinceSlug.replace(/-/g, '+');
         
@@ -149,28 +153,28 @@ class Property24Scraper {
         // Priority 1: With Property24 ID (if available)
         if (p24_id) {
             patterns.push(
-                `${this.baseUrl}/for-sale/${citySlug}/${provinceSlug}/${p24_id}`,
-                `${this.baseUrl}/for-sale/${provinceSlug}/${citySlug}/${p24_id}`
+                `${this.baseUrl}/${urlSegment}/${citySlug}/${provinceSlug}/${p24_id}`,
+                `${this.baseUrl}/${urlSegment}/${provinceSlug}/${citySlug}/${p24_id}`
             );
         }
         
         // Priority 2: Standard slug-based URLs
         patterns.push(
-            `${this.baseUrl}/for-sale/${citySlug}/${provinceSlug}`, // Standard: city/province
-            `${this.baseUrl}/for-sale/${provinceSlug}/${citySlug}` // Reversed: province/city
+            `${this.baseUrl}/${urlSegment}/${citySlug}/${provinceSlug}`, // Standard: city/province
+            `${this.baseUrl}/${urlSegment}/${provinceSlug}/${citySlug}` // Reversed: province/city
         );
         
         // Priority 3: Search-based URLs
         patterns.push(
-            `${this.baseUrl}/for-sale?search=${citySearch}&province=${provinceSearch}`,
-            `${this.baseUrl}/for-sale?search=${citySearch}+${provinceSearch}`,
-            `${this.baseUrl}/for-sale?search=${citySearch}`
+            `${this.baseUrl}/${urlSegment}?search=${citySearch}&province=${provinceSearch}`,
+            `${this.baseUrl}/${urlSegment}?search=${citySearch}+${provinceSearch}`,
+            `${this.baseUrl}/${urlSegment}?search=${citySearch}`
         );
         
         // Priority 4: Province-only and general fallbacks
         patterns.push(
-            `${this.baseUrl}/for-sale/${provinceSlug}`,
-            `${this.baseUrl}/for-sale`
+            `${this.baseUrl}/${urlSegment}/${provinceSlug}`,
+            `${this.baseUrl}/${urlSegment}`
         );
         
         return patterns;
@@ -180,6 +184,7 @@ class Property24Scraper {
    * Try multiple URL patterns if the first one doesn't work
    */
   async tryAlternativeUrls(page, location) {
+    const urlSegment = this.listingType === 'rent' ? 'to-rent' : 'for-sale';
     const provinceSlug = location.province.toLowerCase().replace(/\s+/g, "-");
     const citySlug = location.city.toLowerCase().replace(/\s+/g, "-");
     const citySearch = location.city.toLowerCase().replace(/\s+/g, "+");
@@ -187,12 +192,12 @@ class Property24Scraper {
 
     // Generate alternative URLs for any location
     const alternativeUrls = [
-      `${this.baseUrl}/for-sale/${citySlug}/${provinceSlug}`, // Correct order: city/province
-      `${this.baseUrl}/for-sale/${provinceSlug}/${citySlug}`, // Reversed order (fallback)
-      `${this.baseUrl}/for-sale?search=${citySearch}&province=${provinceSearch}`, // Search-based
-      `${this.baseUrl}/for-sale/${provinceSlug}`, // Province only
-      `${this.baseUrl}/for-sale?search=${citySearch}`, // City search only
-      `${this.baseUrl}/for-sale`, // General fallback
+      `${this.baseUrl}/${urlSegment}/${citySlug}/${provinceSlug}`, // Correct order: city/province
+      `${this.baseUrl}/${urlSegment}/${provinceSlug}/${citySlug}`, // Reversed order (fallback)
+      `${this.baseUrl}/${urlSegment}?search=${citySearch}&province=${provinceSearch}`, // Search-based
+      `${this.baseUrl}/${urlSegment}/${provinceSlug}`, // Province only
+      `${this.baseUrl}/${urlSegment}?search=${citySearch}`, // City search only
+      `${this.baseUrl}/${urlSegment}`, // General fallback
     ];
 
     for (const alternativeUrl of alternativeUrls) {
@@ -244,17 +249,18 @@ class Property24Scraper {
     let propertiesFound = 0;
     let propertiesNew = 0;
     let propertiesUpdated = 0;
+    const foundExternalIds = []; // Track all properties found for delisting detection
     const logs = [
       {
         timestamp: new Date().toISOString(),
         level: "info",
-        message: `Starting Property24 scraper for ${locationString} (max ${maxPages} pages)`,
+        message: `Starting Property24 scraper for ${this.listingType} listings in ${locationString} (max ${maxPages} pages)`,
       },
     ];
 
     try {
-      logger.info(`Starting Property24 scraper for ${locationString}`);
-      logs.push(`Starting Property24 scraper for ${locationString}`);
+      logger.info(`Starting Property24 scraper for ${this.listingType} listings in ${locationString}`);
+      logs.push(`Starting Property24 scraper for ${this.listingType} listings in ${locationString}`);
 
       browser = await chromium.launch({
         headless: true,
@@ -433,7 +439,6 @@ class Property24Scraper {
             break;
           }
         }
-        logger.info(`Listings found: ${listings}`);
 
         if (listings.length === 0) {
           logger.warn("No listings found with any selector");
@@ -447,11 +452,9 @@ class Property24Scraper {
             propertiesFound++;
 
             // Extract basic property data
-            const property = await this.extractPropertyData(
-              $,
-              listing,
-              location
-            );
+            const property = this.listingType === 'rent'
+              ? await this.extractRentalPropertyData($, listing, location)
+              : await this.extractSalePropertyData($, listing, location);
 
             // Filter properties to only include Somerset West area
             const isInTargetLocation = this.isInTargetLocation(
@@ -467,44 +470,76 @@ class Property24Scraper {
             );
 
             if (property.external_id && property.title && isInTargetLocation) {
-              // Check if property already exists
-              const existing = await database.get(
-                "SELECT id FROM properties WHERE external_id = ? AND source_website = ?",
-                [property.external_id, this.source]
-              );
-
-              if (existing) {
-                // Update existing property
-                await database.run(
-                  `
-                                UPDATE properties SET 
-                                    title = ?, description = ?, price = ?, 
-                                    property_type = ?, bedrooms = ?, bathrooms = ?,
-                                    parking_spaces = ?, location_city = ?, location_suburb = ?,
-                                    updated_at = CURRENT_TIMESTAMP
-                                WHERE id = ?
-                            `,
-                  [
-                    property.title,
-                    property.description,
-                    property.price,
-                    property.property_type,
-                    property.bedrooms,
-                    property.bathrooms,
-                    property.parking_spaces,
-                    property.location_city,
-                    property.location_suburb,
-                    existing.id,
-                  ]
+              // Track this property's external_id for delisting detection
+              foundExternalIds.push(property.external_id);
+              
+              if (this.listingType === 'rent') {
+                // Handle rental property
+                const existing = await database.get(
+                  'SELECT id FROM rental_properties WHERE external_id = ? AND source_website = ?',
+                  [property.external_id, this.source]
                 );
-                propertiesUpdated++;
+                if (existing) {
+                  await database.run(`
+                    UPDATE rental_properties SET 
+                      title = ?, description = ?, rental_price = ?, rental_period = ?,
+                      deposit = ?, lease_terms = ?, available_date = ?, furnished_status = ?,
+                      utilities_included = ?, pet_policy = ?, property_type = ?, 
+                      bedrooms = ?, bathrooms = ?, parking_spaces = ?, floor_area = ?,
+                      location_city = ?, location_suburb = ?, updated_at = CURRENT_TIMESTAMP
+                    WHERE id = ?`,
+                    [
+                      property.title, property.description, property.rental_price,
+                      property.rental_period, property.deposit, property.lease_terms,
+                      property.available_date, property.furnished_status,
+                      JSON.stringify(property.utilities_included || []), property.pet_policy,
+                      property.property_type, property.bedrooms, property.bathrooms,
+                      property.parking_spaces, property.floor_area, property.location_city,
+                      property.location_suburb, existing.id
+                    ]
+                  );
+                  propertiesUpdated++;
+                } else {
+                  await database.insertRentalProperty(property);
+                  propertiesNew++;
+                }
+                logger.info(`Processed rental: ${property.title} - R${property.rental_price}/month`);
               } else {
-                // Insert new property
-                await database.insertProperty(property);
-                propertiesNew++;
+                // Handle sale property
+                const existing = await database.get(
+                  "SELECT id FROM properties WHERE external_id = ? AND source_website = ?",
+                  [property.external_id, this.source]
+                );
+                if (existing) {
+                  await database.run(
+                    `
+                                  UPDATE properties SET 
+                                      title = ?, description = ?, price = ?, 
+                                      property_type = ?, bedrooms = ?, bathrooms = ?,
+                                      parking_spaces = ?, location_city = ?, location_suburb = ?,
+                                      updated_at = CURRENT_TIMESTAMP
+                                  WHERE id = ?
+                              `,
+                    [
+                      property.title,
+                      property.description,
+                      property.price,
+                      property.property_type,
+                      property.bedrooms,
+                      property.bathrooms,
+                      property.parking_spaces,
+                      property.location_city,
+                      property.location_suburb,
+                      existing.id,
+                    ]
+                  );
+                  propertiesUpdated++;
+                } else {
+                  await database.insertProperty(property);
+                  propertiesNew++;
+                }
+                logger.info(`Processed: ${property.title} - R${property.price}`);
               }
-
-              logger.info(`Processed: ${property.title} - R${property.price}`);
             } else {
               logger.warn(
                 `Skipping property due to missing data: ID=${property.external_id}, Title=${property.title}`
@@ -570,6 +605,32 @@ class Property24Scraper {
       logger.info(
         `Property24 scraping completed. Scraped ${currentPage} pages. Found: ${propertiesFound}, New: ${propertiesNew}, Updated: ${propertiesUpdated}`
       );
+      
+      // Run delisting detection after successful scraping
+      if (foundExternalIds.length > 0) {
+        try {
+          logger.info(`Running delisting detection for ${foundExternalIds.length} properties found...`);
+          const delistingService = new DelistingDetectionService();
+          const delistingResult = await delistingService.runScraperIntegratedDetection(
+            this.source, // 'property24'
+            this.listingType === 'rent' ? 'rental' : 'sale',
+            foundExternalIds,
+            {
+              city: location.city,
+              province: location.province
+            },
+            48 // 48 hour grace period
+          );
+          
+          logger.info(`Delisting detection completed: ${delistingResult.propertiesDelisted} properties delisted, ${delistingResult.propertiesRelisted} relisted`);
+        } catch (delistingError) {
+          logger.warn(`Delisting detection failed: ${delistingError.message}`);
+          // Don't fail the entire scrape if delisting detection fails
+        }
+      } else {
+        logger.info('No properties found, skipping delisting detection');
+      }
+      
     } catch (error) {
       logger.error("Property24 scraper failed:", JSON.stringify(error.message));
       logger.info(`Scraper failed: ${JSON.stringify(error.message)}`);
@@ -621,7 +682,7 @@ class Property24Scraper {
     return (cityMatch || suburbMatch) && provinceMatch;
   }
 
-  async extractPropertyData($, listing, location = null) {
+  async extractSalePropertyData($, listing, location = null) {
     const property = {
       source_website: this.source,
       external_id: null,
@@ -755,6 +816,44 @@ class Property24Scraper {
         );
       }
 
+      // Extract floor size from structured data
+      const floorSizeElement = listing.find('.p24_size[title="Erf Size"] span').last();
+      if (floorSizeElement.length > 0) {
+        const floorSizeText = floorSizeElement.text().trim();
+        // Extract numeric value from text like "361 m²" or "361 m2" or "361m²"
+        const sizeMatch = floorSizeText.match(/([0-9,\\s]+)\\s*m[²2]/i);
+        if (sizeMatch && sizeMatch[1]) {
+          const sizeValue = sizeMatch[1].replace(/[,\\s]/g, ''); // Remove commas and spaces
+          property.floor_area = parseInt(sizeValue) || null;
+          logger.info(
+            `Floor size extracted: ${floorSizeText} -> ${property.floor_area} m²`
+          );
+        }
+      } else {
+        // Try alternative selectors for floor size
+        const altFloorSizeSelectors = [
+          '.p24_size span', // Generic size element
+          '.p24_erfSize', // Specific erf size class if it exists
+          '.p24_floorSize', // Floor size class if it exists
+        ];
+        
+        for (const selector of altFloorSizeSelectors) {
+          const altFloorSizeEl = listing.find(selector);
+          if (altFloorSizeEl.length > 0) {
+            const floorSizeText = altFloorSizeEl.text().trim();
+            const sizeMatch = floorSizeText.match(/([0-9,\\s]+)\\s*m[²2]/i);
+            if (sizeMatch && sizeMatch[1]) {
+              const sizeValue = sizeMatch[1].replace(/[,\\s]/g, '');
+              property.floor_area = parseInt(sizeValue) || null;
+              logger.info(
+                `Floor size extracted (alt): ${floorSizeText} -> ${property.floor_area} m²`
+              );
+              break;
+            }
+          }
+        }
+      }
+
       // Property type
       if (detailsText.includes("house")) property.property_type = "house";
       else if (
@@ -801,7 +900,7 @@ class Property24Scraper {
         if (dateEl.length > 0) {
           const dateText = dateEl.text().trim();
           // Try to parse various date formats
-          const dateMatch = dateText.match(/(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})|(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})/);
+          const dateMatch = dateText.match(/(\\d{1,2})[\\/-](\\d{1,2})[\\/-](\\d{4})|(\\d{4})[\\/-](\\d{1,2})[\\/-](\\d{1,2})/);
           if (dateMatch) {
             // Convert to ISO format
             if (dateMatch[1] && dateMatch[2] && dateMatch[3]) {
@@ -851,6 +950,227 @@ class Property24Scraper {
       });
     } catch (error) {
       logger.error("Error extracting property data:", error.message);
+    }
+
+    return property;
+  }
+
+  async extractRentalPropertyData($, listing, location = null) {
+    const property = {
+      source_website: this.source,
+      external_id: null,
+      title: null,
+      description: null,
+      rental_price: null,
+      rental_period: 'monthly',
+      deposit: null,
+      lease_terms: null,
+      available_date: null,
+      furnished_status: null,
+      utilities_included: [],
+      pet_policy: null,
+      property_type: null,
+      bedrooms: null,
+      bathrooms: null,
+      parking_spaces: null,
+      floor_area: null,
+      erf_size: null,
+      location_province: null,
+      location_city: null,
+      location_suburb: null,
+      location_address: null,
+      latitude: null,
+      longitude: null,
+      source_url: null,
+      images: [],
+      features: [],
+      agent_name: null,
+      agent_phone: null,
+      agent_email: null,
+      listing_date: null,
+    };
+
+    try {
+      // Extract external ID from listing
+      const listingNumberEl = listing.find('[data-listing-number]');
+      if (listingNumberEl.length > 0) {
+        property.external_id = listingNumberEl.attr('data-listing-number');
+      } else {
+        // Fallback: extract from URL or generate
+        const linkEl = listing.find('a[href*="/to-rent/"]').first();
+        if (linkEl.length > 0) {
+          const href = linkEl.attr('href');
+          const match = href.match(/\/(\d+)$/);
+          property.external_id = match ? match[1] : `p24r_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        }
+      }
+
+      // Extract title and URL
+      const titleLinkEl = listing.find('a[href*="/to-rent/"]').first();
+      if (titleLinkEl.length > 0) {
+        // Try to get title from specific selectors first
+        const titleEl = titleLinkEl.find('.p24_title, h3, h4, .title').first();
+        if (titleEl.length > 0) {
+          property.title = titleEl.text().trim();
+        } else {
+          // Fallback to link text but clean it up
+          let titleText = titleLinkEl.text().trim();
+          // Remove price and details, keep only the main title
+          titleText = titleText.replace(/R\s*[\d,]+.*$/i, '').trim();
+          titleText = titleText.split('\n')[0].trim(); // Take only first line
+          property.title = titleText || 'Property for Rent';
+        }
+        
+        const href = titleLinkEl.attr('href');
+        property.source_url = href && href.startsWith('http') ? href : this.baseUrl + href;
+      }
+
+      // Extract rental price - look for rental-specific price indicators
+      const priceEl = listing.find('.p24_price, .js_p24Price, .price');
+      if (priceEl.length > 0) {
+        const priceText = priceEl.text().replace(/[^\d.]/g, '');
+        property.rental_price = parseFloat(priceText) || null;
+        
+        // Determine rental period from price text
+        const fullPriceText = priceEl.text().toLowerCase();
+        if (fullPriceText.includes('per week') || fullPriceText.includes('/week')) {
+          property.rental_period = 'weekly';
+        } else if (fullPriceText.includes('per day') || fullPriceText.includes('/day')) {
+          property.rental_period = 'daily';
+        } else {
+          property.rental_period = 'monthly'; // Default
+        }
+      }
+
+      // Extract property details from text content
+      const detailsText = listing.text().toLowerCase();
+      
+      // Bedrooms
+      const bedroomMatch = detailsText.match(/(\d+)\s*(bed|bedroom)/);
+      property.bedrooms = bedroomMatch ? parseInt(bedroomMatch[1]) : null;
+
+      // Bathrooms
+      const bathroomMatch = detailsText.match(/(\d+)\s*(bath|bathroom)/);
+      property.bathrooms = bathroomMatch ? parseInt(bathroomMatch[1]) : null;
+
+      // Parking
+      const parkingMatch = detailsText.match(/(\d+)\s*(garage|parking|carport)/);
+      property.parking_spaces = parkingMatch ? parseInt(parkingMatch[1]) : null;
+
+      // Floor area
+      const areaMatch = detailsText.match(/(\d+)\s*(m2|sqm|square)/);
+      property.floor_area = areaMatch ? parseInt(areaMatch[1]) : null;
+
+      // Property type detection
+      if (detailsText.includes('house') || detailsText.includes('home')) property.property_type = 'house';
+      else if (detailsText.includes('apartment') || detailsText.includes('flat')) property.property_type = 'apartment';
+      else if (detailsText.includes('townhouse') || detailsText.includes('town house')) property.property_type = 'townhouse';
+      else if (detailsText.includes('studio')) property.property_type = 'studio';
+      else if (detailsText.includes('commercial')) property.property_type = 'commercial';
+
+      // Rental-specific extractions
+      
+      // Furnished status detection
+      if (detailsText.includes('furnished')) {
+        if (detailsText.includes('unfurnished')) {
+          property.furnished_status = 'unfurnished';
+        } else if (detailsText.includes('semi-furnished') || detailsText.includes('partially furnished')) {
+          property.furnished_status = 'semi-furnished';
+        } else {
+          property.furnished_status = 'furnished';
+        }
+      }
+
+      // Pet policy detection
+      if (detailsText.includes('pet friendly') || detailsText.includes('pets allowed')) {
+        property.pet_policy = 'allowed';
+      } else if (detailsText.includes('no pets') || detailsText.includes('pets not allowed')) {
+        property.pet_policy = 'not_allowed';
+      } else if (detailsText.includes('cats only')) {
+        property.pet_policy = 'cats_only';
+      } else if (detailsText.includes('dogs only')) {
+        property.pet_policy = 'dogs_only';
+      }
+
+      // Utilities included detection
+      const utilities = [];
+      if (detailsText.includes('water included')) utilities.push('water');
+      if (detailsText.includes('electricity included')) utilities.push('electricity');
+      if (detailsText.includes('wifi included') || detailsText.includes('internet included')) utilities.push('wifi');
+      if (detailsText.includes('gas included')) utilities.push('gas');
+      if (detailsText.includes('dstv') || detailsText.includes('satellite tv')) utilities.push('satellite_tv');
+      property.utilities_included = utilities;
+
+      // Deposit extraction
+      const depositMatch = detailsText.match(/deposit[:\s]*r?\s*(\d+(?:,\d+)*(?:\.\d+)?)/i);
+      if (depositMatch) {
+        property.deposit = parseFloat(depositMatch[1].replace(/,/g, ''));
+      }
+
+      // Available date extraction
+      const availableMatch = detailsText.match(/available[:\s]*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/i);
+      if (availableMatch) {
+        property.available_date = availableMatch[1];
+      } else if (detailsText.includes('available immediately')) {
+        property.available_date = new Date().toISOString().split('T')[0];
+      }
+
+      // Extract location information
+      const locationEl = listing.find('.p24_location, .js_p24Location, .location');
+      if (locationEl.length > 0) {
+        const locationText = locationEl.text().trim();
+        const parts = locationText.split(',').map(s => s.trim());
+        
+        if (parts.length >= 2) {
+          property.location_suburb = parts[0];
+          property.location_city = parts[1];
+        } else if (parts.length === 1) {
+          property.location_city = parts[0];
+        }
+        
+        // Set province based on city
+        if (location) {
+          property.location_province = location.province;
+        }
+      }
+
+      // Extract agent information
+      const agentEl = listing.find('.p24_agentName, .agent-name, .js_agentName');
+      if (agentEl.length > 0) {
+        property.agent_name = agentEl.text().trim();
+      }
+
+      // Extract agent phone
+      const phoneEl = listing.find('.p24_agentPhone, .agent-phone, .js_agentPhone');
+      if (phoneEl.length > 0) {
+        property.agent_phone = phoneEl.text().trim();
+      }
+
+      // Extract images
+      const imgElements = listing.find('img');
+      imgElements.each((i, img) => {
+        const src = $(img).attr('src') || $(img).attr('data-src') || $(img).attr('data-lazy');
+        if (src && !src.includes('placeholder') && !src.includes('logo') && !src.includes('icon')) {
+          const fullSrc = src.startsWith('http') ? src : this.baseUrl + src;
+          if (!property.images.includes(fullSrc)) {
+            property.images.push(fullSrc);
+          }
+        }
+      });
+
+      // Extract features from detailed text
+      const featuresEl = listing.find('.p24_features, .features, .amenities');
+      if (featuresEl.length > 0) {
+        featuresEl.find('li, span, div').each((i, el) => {
+          const feature = $(el).text().trim().toLowerCase();
+          if (feature && feature.length > 2 && feature.length < 50) {
+            property.features.push(feature);
+          }
+        });
+      }
+
+    } catch (error) {
+      logger.error('Error extracting rental property data:', error.message);
     }
 
     return property;
