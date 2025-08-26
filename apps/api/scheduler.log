@@ -1,0 +1,568 @@
+2025-08-07T19:04:34.131Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-07T19:04:34.154Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-07T19:04:34.155Z [SCHEDULER-INFO]: Scheduled job 'privateproperty-regular' with expression '30 */8 * * *'
+2025-08-07T19:04:34.155Z [SCHEDULER-INFO]: Scheduled job 'daily-comprehensive' with expression '0 2 * * *'
+2025-08-07T19:04:34.156Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-07T19:04:34.156Z [SCHEDULER-INFO]: Scheduled 4 jobs
+2025-08-07T19:04:34.156Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-07T19:04:54.779Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-07T19:04:54.799Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-07T19:04:54.800Z [SCHEDULER-INFO]: Scheduled job 'privateproperty-regular' with expression '30 */8 * * *'
+2025-08-07T19:04:54.801Z [SCHEDULER-INFO]: Scheduled job 'daily-comprehensive' with expression '0 2 * * *'
+2025-08-07T19:04:54.801Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-07T19:04:54.801Z [SCHEDULER-INFO]: Scheduled 4 jobs
+2025-08-07T19:04:54.801Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-07T19:22:28.874Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-07T19:22:28.894Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-07T19:22:28.895Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-07T19:22:28.895Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-07T19:22:28.895Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-08T16:48:49.529Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-08T16:48:49.550Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-08T16:48:49.551Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-08T16:48:49.551Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-08T16:48:49.551Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-09T06:20:36.398Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-09T06:20:36.445Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-09T06:20:36.445Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-09T06:20:36.446Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-09T06:20:36.446Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-09T07:24:57.554Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-09T07:24:57.609Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-09T07:24:57.610Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-09T07:24:57.610Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-09T07:24:57.610Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-09T09:03:55.532Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-09T09:03:55.563Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-09T09:03:55.564Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-09T09:03:55.564Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-09T09:03:55.564Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-09T09:16:47.250Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-09T09:16:47.269Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-09T09:16:47.270Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-09T09:16:47.270Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-09T09:16:47.270Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-09T09:17:33.226Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-09T09:17:33.252Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-09T09:17:33.253Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-09T09:17:33.253Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-09T09:17:33.253Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-09T09:32:16.757Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-09T09:32:16.776Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-09T09:32:16.777Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-09T09:32:16.777Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-09T09:32:16.777Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-09T09:34:39.620Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-09T09:34:39.639Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-09T09:34:39.640Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-09T09:34:39.640Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-09T09:34:39.640Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-09T09:34:52.814Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-09T09:34:52.833Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-09T09:34:52.834Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-09T09:34:52.834Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-09T09:34:52.834Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-09T09:37:37.023Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-09T09:37:37.042Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-09T09:37:37.043Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-09T09:37:37.043Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-09T09:37:37.043Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-09T09:37:43.066Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-09T09:37:43.085Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-09T09:37:43.085Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-09T09:37:43.086Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-09T09:37:43.086Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-09T09:39:16.338Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-09T09:39:16.357Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-09T09:39:16.358Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-09T09:39:16.358Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-09T09:39:16.358Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-09T09:39:24.547Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-09T09:39:24.567Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-09T09:39:24.567Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-09T09:39:24.568Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-09T09:39:24.568Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-09T10:00:00.341Z [SCHEDULER-INFO]: Executing scheduled job: property24-regular
+2025-08-09T10:00:00.342Z [SCHEDULER-INFO]: Starting scheduled Property24 scrape
+2025-08-09T10:00:48.712Z [SCHEDULER-INFO]: Scheduled scrape completed for property24: {"propertiesFound":75,"propertiesNew":13,"propertiesUpdated":40}
+2025-08-09T10:00:48.712Z [SCHEDULER-INFO]: Completed scheduled job: property24-regular
+2025-08-09T15:26:02.050Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-09T15:26:02.070Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-09T15:26:02.070Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-09T15:26:02.070Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-09T15:26:02.071Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-10T08:08:55.394Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-10T08:08:55.414Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-10T08:08:55.415Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-10T08:08:55.415Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-10T08:08:55.415Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-10T09:00:12.836Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-10T09:00:12.856Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-10T09:00:12.856Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-10T09:00:12.857Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-10T09:00:12.857Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-11T18:02:31.426Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-11T18:02:31.447Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-11T18:02:31.448Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-11T18:02:31.448Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-11T18:02:31.448Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-11T18:43:45.455Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-11T18:43:45.474Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-11T18:43:45.475Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-11T18:43:45.475Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-11T18:43:45.475Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-11T18:49:43.472Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-11T18:49:43.491Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-11T18:49:43.492Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-11T18:49:43.492Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-11T18:49:43.492Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-11T18:52:09.296Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-11T18:52:09.315Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-11T18:52:09.316Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-11T18:52:09.316Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-11T18:52:09.316Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-11T18:53:21.645Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-11T18:53:21.664Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-11T18:53:21.664Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-11T18:53:21.665Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-11T18:53:21.665Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-11T18:57:45.128Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-11T18:57:45.147Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-11T18:57:45.148Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-11T18:57:45.148Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-11T18:57:45.148Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-12T18:30:20.289Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-12T18:30:20.310Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-12T18:30:20.311Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-12T18:30:20.311Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-12T18:30:20.311Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-14T16:41:46.400Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-14T16:41:46.449Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-14T16:41:46.450Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-14T16:41:46.450Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-14T16:41:46.450Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-14T16:53:22.568Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-14T16:53:22.587Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-14T16:53:22.588Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-14T16:53:22.588Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-14T16:53:22.588Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-15T16:09:07.332Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-15T16:09:07.353Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-15T16:09:07.354Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-15T16:09:07.354Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-15T16:09:07.354Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-15T16:55:00.101Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-15T16:55:00.120Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-15T16:55:00.121Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-15T16:55:00.121Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-15T16:55:00.121Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-16T09:42:42.016Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-16T09:42:42.037Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-16T09:42:42.038Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-16T09:42:42.038Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-16T09:42:42.038Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-16T09:49:39.649Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-16T09:49:39.668Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-16T09:49:39.668Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-16T09:49:39.669Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-16T09:49:39.669Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-16T15:05:52.445Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-16T15:05:52.466Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-16T15:05:52.467Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-16T15:05:52.467Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-16T15:05:52.468Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-16T15:21:38.473Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-16T15:21:38.492Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-16T15:21:38.493Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-16T15:21:38.493Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-16T15:21:38.493Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-16T16:00:00.445Z [SCHEDULER-INFO]: Executing scheduled job: property24-regular
+2025-08-16T16:00:00.446Z [SCHEDULER-INFO]: Starting scheduled Property24 scrape
+2025-08-16T16:01:12.707Z [SCHEDULER-INFO]: Scheduled scrape completed for property24: {"propertiesFound":74,"propertiesNew":8,"propertiesUpdated":24}
+2025-08-16T16:01:12.707Z [SCHEDULER-INFO]: Completed scheduled job: property24-regular
+2025-08-18T18:03:10.086Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-18T18:03:10.107Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-18T18:03:10.108Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-18T18:03:10.108Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-18T18:03:10.108Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-18T18:14:43.100Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-18T18:14:43.124Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-18T18:14:43.124Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-18T18:14:43.125Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-18T18:14:43.125Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-18T18:15:45.181Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-18T18:15:45.200Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-18T18:15:45.201Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-18T18:15:45.201Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-18T18:15:45.202Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-18T18:16:16.331Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-18T18:16:16.351Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-18T18:16:16.351Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-18T18:16:16.352Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-18T18:16:16.352Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-18T18:25:53.367Z [SCHEDULER-INFO]: Shutting down scheduler...
+2025-08-18T18:25:59.906Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-18T18:25:59.926Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-18T18:25:59.927Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-18T18:25:59.927Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-18T18:25:59.927Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-18T18:26:28.681Z [SCHEDULER-INFO]: Shutting down scheduler...
+2025-08-18T18:27:11.122Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-18T18:27:11.141Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-18T18:27:11.141Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-18T18:27:11.141Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-18T18:27:11.142Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-18T18:35:56.169Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-18T18:35:56.189Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-18T18:35:56.189Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-18T18:35:56.189Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-18T18:35:56.190Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-18T18:38:31.646Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-18T18:38:31.665Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-18T18:38:31.665Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-18T18:38:31.665Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-18T18:38:31.666Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-18T18:38:55.573Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-18T18:38:55.592Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-18T18:38:55.593Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-18T18:38:55.593Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-18T18:38:55.593Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-18T18:39:58.373Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-18T18:39:58.392Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-18T18:39:58.393Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-18T18:39:58.393Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-18T18:39:58.393Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-18T18:40:28.621Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-18T18:40:28.641Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-18T18:40:28.641Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-18T18:40:28.641Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-18T18:40:28.641Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-18T18:41:08.874Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-18T18:41:08.893Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-18T18:41:08.893Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-18T18:41:08.893Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-18T18:41:08.894Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-18T18:41:11.478Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-18T18:41:11.497Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-18T18:41:11.497Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-18T18:41:11.498Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-18T18:41:11.498Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-18T18:41:23.396Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-18T18:41:23.415Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-18T18:41:23.416Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-18T18:41:23.416Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-18T18:41:23.416Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-18T18:47:59.133Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-18T18:47:59.153Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-18T18:47:59.154Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-18T18:47:59.154Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-18T18:47:59.155Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-18T18:58:10.064Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-18T18:58:10.083Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-18T18:58:10.084Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-18T18:58:10.084Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-18T18:58:10.084Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-18T18:58:22.635Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-18T18:58:22.654Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-18T18:58:22.655Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-18T18:58:22.655Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-18T18:58:22.655Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-18T18:58:28.882Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-18T18:58:28.901Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-18T18:58:28.902Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-18T18:58:28.902Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-18T18:58:28.902Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-18T18:58:50.016Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-18T18:58:50.036Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-18T18:58:50.037Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-18T18:58:50.037Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-18T18:58:50.037Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-18T18:58:56.127Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-18T18:58:56.147Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-18T18:58:56.147Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-18T18:58:56.147Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-18T18:58:56.148Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-18T19:01:49.192Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-18T19:01:49.212Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-18T19:01:49.212Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-18T19:01:49.212Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-18T19:01:49.213Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-18T19:05:05.624Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-18T19:05:05.643Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-18T19:05:05.644Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-18T19:05:05.644Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-18T19:05:05.644Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-18T19:06:39.419Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-18T19:06:39.438Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-18T19:06:39.439Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-18T19:06:39.439Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-18T19:06:39.439Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-18T19:09:00.246Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-18T19:09:00.266Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-18T19:09:00.266Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-18T19:09:00.266Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-18T19:09:00.267Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-18T19:14:19.616Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-18T19:14:19.635Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-18T19:14:19.635Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-18T19:14:19.635Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-18T19:14:19.636Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-18T19:16:48.109Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-18T19:16:48.128Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-18T19:16:48.128Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-18T19:16:48.129Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-18T19:16:48.129Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-18T19:26:05.765Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-18T19:26:05.784Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-18T19:26:05.784Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-18T19:26:05.785Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-18T19:26:05.785Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-18T19:29:19.267Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-18T19:29:19.287Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-18T19:29:19.287Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-18T19:29:19.288Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-18T19:29:19.288Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-24T08:38:38.170Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-24T08:38:38.191Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-24T08:38:38.192Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-24T08:38:38.192Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-24T08:38:38.193Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-24T10:00:00.006Z [SCHEDULER-INFO]: Executing scheduled job: property24-regular
+2025-08-24T10:00:00.007Z [SCHEDULER-INFO]: Starting scheduled Property24 scrape
+2025-08-24T10:00:42.427Z [SCHEDULER-INFO]: Scheduled scrape completed for property24: {"propertiesFound":74,"propertiesNew":4,"propertiesUpdated":12}
+2025-08-24T10:00:42.427Z [SCHEDULER-INFO]: Completed scheduled job: property24-regular
+2025-08-24T10:33:11.136Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-24T10:33:11.155Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-24T10:33:11.156Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-24T10:33:11.156Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-24T10:33:11.156Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-24T10:33:14.862Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-24T10:33:14.882Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-24T10:33:14.882Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-24T10:33:14.883Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-24T10:33:14.883Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-24T10:42:38.567Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-24T10:42:38.586Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-24T10:42:38.587Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-24T10:42:38.587Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-24T10:42:38.588Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-24T10:43:17.838Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-24T10:43:17.858Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-24T10:43:17.858Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-24T10:43:17.859Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-24T10:43:17.859Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-24T10:50:25.308Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-24T10:50:25.328Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-24T10:50:25.328Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-24T10:50:25.328Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-24T10:50:25.329Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-24T10:57:13.900Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-24T10:57:13.920Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-24T10:57:13.920Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-24T10:57:13.921Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-24T10:57:13.921Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-24T11:03:06.613Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-24T11:03:06.632Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-24T11:03:06.633Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-24T11:03:06.633Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-24T11:03:06.633Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-24T11:03:45.197Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-24T11:03:45.217Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-24T11:03:45.217Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-24T11:03:45.218Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-24T11:03:45.218Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-24T11:04:05.235Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-24T11:04:05.254Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-24T11:04:05.255Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-24T11:04:05.255Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-24T11:04:05.255Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-24T11:04:17.323Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-24T11:04:17.342Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-24T11:04:17.343Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-24T11:04:17.343Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-24T11:04:17.343Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-24T11:04:37.194Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-24T11:04:37.213Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-24T11:04:37.214Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-24T11:04:37.214Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-24T11:04:37.214Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-24T11:05:18.160Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-24T11:05:18.180Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-24T11:05:18.181Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-24T11:05:18.181Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-24T11:05:18.181Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-24T11:55:45.035Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-24T11:55:45.055Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-24T11:55:45.055Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-24T11:55:45.056Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-24T11:55:45.056Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-24T11:55:58.318Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-24T11:55:58.337Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-24T11:55:58.338Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-24T11:55:58.338Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-24T11:55:58.338Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-24T11:56:25.073Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-24T11:56:25.092Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-24T11:56:25.093Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-24T11:56:25.093Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-24T11:56:25.093Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-24T12:26:48.961Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-24T12:26:48.980Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-24T12:26:48.981Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-24T12:26:48.981Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-24T12:26:48.981Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-24T12:28:18.605Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-24T12:28:18.624Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-24T12:28:18.624Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-24T12:28:18.624Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-24T12:28:18.624Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-24T12:30:12.333Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-24T12:30:12.352Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-24T12:30:12.353Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-24T12:30:12.353Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-24T12:30:12.353Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-24T12:33:17.452Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-24T12:33:17.471Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-24T12:33:17.472Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-24T12:33:17.472Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-24T12:33:17.472Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-24T12:33:34.638Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-24T12:33:34.658Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-24T12:33:34.658Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-24T12:33:34.659Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-24T12:33:34.659Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-24T13:19:38.604Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-24T13:19:38.623Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-24T13:19:38.624Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-24T13:19:38.624Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-24T13:19:38.624Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-25T18:23:39.336Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-25T18:23:39.360Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-25T18:23:39.361Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-25T18:23:39.361Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-25T18:23:39.361Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-25T18:46:15.915Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-25T18:46:15.935Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-25T18:46:15.936Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-25T18:46:15.936Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-25T18:46:15.936Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-25T18:46:56.530Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-25T18:46:56.550Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-25T18:46:56.550Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-25T18:46:56.551Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-25T18:46:56.551Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-25T18:47:10.086Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-25T18:47:10.106Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-25T18:47:10.106Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-25T18:47:10.106Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-25T18:47:10.107Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-25T18:47:23.716Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-25T18:47:23.735Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-25T18:47:23.735Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-25T18:47:23.736Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-25T18:47:23.736Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-25T18:47:57.797Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-25T18:47:57.816Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-25T18:47:57.817Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-25T18:47:57.817Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-25T18:47:57.817Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-25T18:48:31.758Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-25T18:48:31.778Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-25T18:48:31.778Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-25T18:48:31.779Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-25T18:48:31.779Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-25T18:49:46.468Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-25T18:49:46.487Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-25T18:49:46.488Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-25T18:49:46.488Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-25T18:49:46.488Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-25T18:50:11.689Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-25T18:50:11.708Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-25T18:50:11.709Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-25T18:50:11.709Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-25T18:50:11.709Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-25T18:53:03.553Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-25T18:53:03.572Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-25T18:53:03.573Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-25T18:53:03.573Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-25T18:53:03.573Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-25T18:54:53.539Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-25T18:54:53.558Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-25T18:54:53.558Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-25T18:54:53.559Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-25T18:54:53.559Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-25T18:55:38.204Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-25T18:55:38.224Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-25T18:55:38.224Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-25T18:55:38.225Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-25T18:55:38.225Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-25T18:57:05.052Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-25T18:57:05.072Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-25T18:57:05.073Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-25T18:57:05.073Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-25T18:57:05.073Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-25T19:00:22.807Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-25T19:00:22.826Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-25T19:00:22.827Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-25T19:00:22.827Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-25T19:00:22.827Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-25T19:12:33.311Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-25T19:12:33.330Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-25T19:12:33.330Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-25T19:12:33.331Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-25T19:12:33.331Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-25T19:13:13.364Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-25T19:13:13.383Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-25T19:13:13.384Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-25T19:13:13.384Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-25T19:13:13.384Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-25T19:14:02.945Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-25T19:14:02.964Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-25T19:14:02.965Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-25T19:14:02.965Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-25T19:14:02.965Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-25T19:15:00.697Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-25T19:15:00.716Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-25T19:15:00.717Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-25T19:15:00.717Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-25T19:15:00.717Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-25T19:36:35.897Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-25T19:36:35.916Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-25T19:36:35.917Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-25T19:36:35.917Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-25T19:36:35.917Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-26T18:05:46.119Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-26T18:05:46.178Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-26T18:05:46.179Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-26T18:05:46.180Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-26T18:05:46.180Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-26T18:18:47.103Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-26T18:18:47.122Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-26T18:18:47.123Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-26T18:18:47.123Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-26T18:18:47.123Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-26T18:18:58.143Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-26T18:18:58.162Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-26T18:18:58.163Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-26T18:18:58.163Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-26T18:18:58.163Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-26T18:19:03.229Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-26T18:19:03.248Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-26T18:19:03.248Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-26T18:19:03.249Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-26T18:19:03.249Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-26T18:19:16.009Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-26T18:19:16.029Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-26T18:19:16.029Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-26T18:19:16.029Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-26T18:19:16.030Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-26T18:19:43.368Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-26T18:19:43.387Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-26T18:19:43.388Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-26T18:19:43.388Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-26T18:19:43.388Z [SCHEDULER-INFO]: Scheduler initialized successfully
+2025-08-26T18:39:21.954Z [SCHEDULER-INFO]: Initializing scheduler...
+2025-08-26T18:39:21.974Z [SCHEDULER-INFO]: Scheduled job 'property24-regular' with expression '0 */6 * * *'
+2025-08-26T18:39:21.974Z [SCHEDULER-INFO]: Scheduled job 'weekly-maintenance' with expression '0 0 * * 0'
+2025-08-26T18:39:21.975Z [SCHEDULER-INFO]: Scheduled 2 jobs
+2025-08-26T18:39:21.975Z [SCHEDULER-INFO]: Scheduler initialized successfully

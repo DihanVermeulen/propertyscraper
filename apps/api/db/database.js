@@ -171,6 +171,25 @@ class Database {
             sql += ' AND source_website = ?';
             params.push(filters.source_website);
         }
+        if (filters.min_floor_area) {
+            sql += ' AND floor_area >= ?';
+            params.push(filters.min_floor_area);
+        }
+        if (filters.max_floor_area) {
+            sql += ' AND floor_area <= ?';
+            params.push(filters.max_floor_area);
+        }
+        if (filters.floor_area_range) {
+            if (filters.floor_area_range === 'not_listed') {
+                sql += ' AND (floor_area IS NULL OR floor_area = 0)';
+            } else if (filters.floor_area_range === '500+') {
+                sql += ' AND floor_area >= 500';
+            } else if (filters.floor_area_range.includes('-')) {
+                const [min, max] = filters.floor_area_range.split('-').map(Number);
+                sql += ' AND floor_area >= ? AND floor_area <= ?';
+                params.push(min, max);
+            }
+        }
 
         sql += ' ORDER BY scraped_at DESC LIMIT ? OFFSET ?';
         params.push(limit, offset);
@@ -214,6 +233,25 @@ class Database {
         if (filters.source_website) {
             sql += ' AND source_website = ?';
             params.push(filters.source_website);
+        }
+        if (filters.min_floor_area) {
+            sql += ' AND floor_area >= ?';
+            params.push(filters.min_floor_area);
+        }
+        if (filters.max_floor_area) {
+            sql += ' AND floor_area <= ?';
+            params.push(filters.max_floor_area);
+        }
+        if (filters.floor_area_range) {
+            if (filters.floor_area_range === 'not_listed') {
+                sql += ' AND (floor_area IS NULL OR floor_area = 0)';
+            } else if (filters.floor_area_range === '500+') {
+                sql += ' AND floor_area >= 500';
+            } else if (filters.floor_area_range.includes('-')) {
+                const [min, max] = filters.floor_area_range.split('-').map(Number);
+                sql += ' AND floor_area >= ? AND floor_area <= ?';
+                params.push(min, max);
+            }
         }
 
         const result = await this.get(sql, params);
@@ -499,6 +537,483 @@ class Database {
             GROUP BY DATE(recorded_at)
             ORDER BY date DESC
         `, [days]);
+    }
+
+    // RENTAL PROPERTIES METHODS
+
+    async insertRentalProperty(property) {
+        const sql = `
+            INSERT OR REPLACE INTO rental_properties (
+                external_id, title, description, rental_price, rental_period,
+                deposit, lease_terms, available_date, furnished_status, utilities_included, pet_policy,
+                property_type, bedrooms, bathrooms, parking_spaces,
+                floor_area, erf_size, location_province, location_city,
+                location_suburb, location_address, latitude, longitude,
+                source_website, source_url, images, features,
+                agent_name, agent_phone, agent_email, listing_date
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+        
+        const params = [
+            property.external_id, property.title, property.description,
+            property.rental_price, property.rental_period || 'monthly',
+            property.deposit, property.lease_terms, property.available_date,
+            property.furnished_status, JSON.stringify(property.utilities_included || []),
+            property.pet_policy, property.property_type,
+            property.bedrooms, property.bathrooms, property.parking_spaces,
+            property.floor_area, property.erf_size, property.location_province,
+            property.location_city, property.location_suburb, property.location_address,
+            property.latitude, property.longitude, property.source_website,
+            property.source_url, JSON.stringify(property.images || []),
+            JSON.stringify(property.features || []), property.agent_name,
+            property.agent_phone, property.agent_email, property.listing_date
+        ];
+
+        return await this.run(sql, params);
+    }
+
+    async getRentalProperties(filters = {}, limit = 50, offset = 0) {
+        let sql = 'SELECT * FROM rental_properties WHERE is_active = 1';
+        const params = [];
+
+        // Add filters
+        if (filters.min_rental_price) {
+            sql += ' AND rental_price >= ?';
+            params.push(filters.min_rental_price);
+        }
+        if (filters.max_rental_price) {
+            sql += ' AND rental_price <= ?';
+            params.push(filters.max_rental_price);
+        }
+        if (filters.bedrooms) {
+            sql += ' AND bedrooms >= ?';
+            params.push(filters.bedrooms);
+        }
+        if (filters.bathrooms) {
+            sql += ' AND bathrooms >= ?';
+            params.push(filters.bathrooms);
+        }
+        if (filters.property_type) {
+            sql += ' AND property_type = ?';
+            params.push(filters.property_type);
+        }
+        if (filters.location_city) {
+            sql += ' AND location_city LIKE ?';
+            params.push(`%${filters.location_city}%`);
+        }
+        if (filters.location_suburb) {
+            sql += ' AND location_suburb LIKE ?';
+            params.push(`%${filters.location_suburb}%`);
+        }
+        if (filters.furnished_status) {
+            sql += ' AND furnished_status = ?';
+            params.push(filters.furnished_status);
+        }
+        if (filters.pet_policy) {
+            sql += ' AND pet_policy = ?';
+            params.push(filters.pet_policy);
+        }
+        if (filters.available_from) {
+            sql += ' AND (available_date IS NULL OR available_date <= ?)';
+            params.push(filters.available_from);
+        }
+        if (filters.source_website) {
+            sql += ' AND source_website = ?';
+            params.push(filters.source_website);
+        }
+
+        sql += ' ORDER BY scraped_at DESC LIMIT ? OFFSET ?';
+        params.push(limit, offset);
+
+        return await this.query(sql, params);
+    }
+
+    async getRentalPropertyCount(filters = {}) {
+        let sql = 'SELECT COUNT(*) as count FROM rental_properties WHERE is_active = 1';
+        const params = [];
+
+        // Add same filters as getRentalProperties
+        if (filters.min_rental_price) {
+            sql += ' AND rental_price >= ?';
+            params.push(filters.min_rental_price);
+        }
+        if (filters.max_rental_price) {
+            sql += ' AND rental_price <= ?';
+            params.push(filters.max_rental_price);
+        }
+        if (filters.bedrooms) {
+            sql += ' AND bedrooms >= ?';
+            params.push(filters.bedrooms);
+        }
+        if (filters.bathrooms) {
+            sql += ' AND bathrooms >= ?';
+            params.push(filters.bathrooms);
+        }
+        if (filters.property_type) {
+            sql += ' AND property_type = ?';
+            params.push(filters.property_type);
+        }
+        if (filters.location_city) {
+            sql += ' AND location_city LIKE ?';
+            params.push(`%${filters.location_city}%`);
+        }
+        if (filters.location_suburb) {
+            sql += ' AND location_suburb LIKE ?';
+            params.push(`%${filters.location_suburb}%`);
+        }
+        if (filters.furnished_status) {
+            sql += ' AND furnished_status = ?';
+            params.push(filters.furnished_status);
+        }
+        if (filters.pet_policy) {
+            sql += ' AND pet_policy = ?';
+            params.push(filters.pet_policy);
+        }
+        if (filters.available_from) {
+            sql += ' AND (available_date IS NULL OR available_date <= ?)';
+            params.push(filters.available_from);
+        }
+        if (filters.source_website) {
+            sql += ' AND source_website = ?';
+            params.push(filters.source_website);
+        }
+
+        const result = await this.get(sql, params);
+        return result.count;
+    }
+
+    // PROPERTY EXPENSES METHODS
+
+    async insertPropertyExpenses(expenses) {
+        const sql = `
+            INSERT OR REPLACE INTO property_expenses (
+                property_id, property_table, municipal_rates, body_corporate_levies,
+                insurance_estimate, maintenance_reserve, municipal_taxes, property_tax,
+                transfer_costs, bond_costs, data_source
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+        
+        const params = [
+            expenses.property_id, expenses.property_table,
+            expenses.municipal_rates, expenses.body_corporate_levies,
+            expenses.insurance_estimate, expenses.maintenance_reserve,
+            expenses.municipal_taxes, expenses.property_tax,
+            expenses.transfer_costs, expenses.bond_costs,
+            expenses.data_source || 'scraped'
+        ];
+
+        return await this.run(sql, params);
+    }
+
+    async getPropertyExpenses(propertyId, propertyTable) {
+        return await this.get(
+            'SELECT * FROM property_expenses WHERE property_id = ? AND property_table = ? ORDER BY scraped_at DESC LIMIT 1',
+            [propertyId, propertyTable]
+        );
+    }
+
+    // RENTAL YIELD ANALYSIS METHODS
+
+    async calculateRentalYield(salePropertyId) {
+        // Get the sale property
+        const saleProperty = await this.get(
+            'SELECT * FROM properties WHERE id = ? AND is_active = 1',
+            [salePropertyId]
+        );
+        
+        if (!saleProperty) {
+            throw new Error('Sale property not found');
+        }
+
+        // Get comparable rental properties in the same area
+        const comparableRentals = await this.query(`
+            SELECT rental_price, bedrooms, bathrooms, property_type, floor_area
+            FROM rental_properties 
+            WHERE is_active = 1
+            AND location_city = ?
+            AND location_suburb = ?
+            AND property_type = ?
+            AND bedrooms >= ? AND bedrooms <= ?
+            AND rental_period = 'monthly'
+        `, [
+            saleProperty.location_city,
+            saleProperty.location_suburb,
+            saleProperty.property_type,
+            Math.max(1, saleProperty.bedrooms - 1),
+            saleProperty.bedrooms + 1
+        ]);
+
+        if (comparableRentals.length === 0) {
+            return null; // No comparable rentals found
+        }
+
+        // Calculate average rental
+        const avgRental = comparableRentals.reduce((sum, r) => sum + r.rental_price, 0) / comparableRentals.length;
+        const estimatedMonthlyRental = avgRental;
+        const annualRental = estimatedMonthlyRental * 12;
+
+        // Get property expenses
+        const expenses = await this.getPropertyExpenses(salePropertyId, 'properties');
+        const monthlyExpenses = (
+            (expenses?.municipal_rates || 0) +
+            (expenses?.body_corporate_levies || 0) +
+            (expenses?.insurance_estimate || 0) +
+            (expenses?.maintenance_reserve || 0)
+        );
+        const annualExpenses = (monthlyExpenses * 12) + (expenses?.municipal_taxes || 0) + (expenses?.property_tax || 0);
+
+        // Calculate yields
+        const grossRentalYield = (annualRental / saleProperty.price) * 100;
+        const netRentalYield = ((annualRental - annualExpenses) / saleProperty.price) * 100;
+        const netMonthlyCashFlow = estimatedMonthlyRental - monthlyExpenses;
+        const breakEvenRental = monthlyExpenses;
+
+        // Insert analysis
+        const analysisData = {
+            sale_property_id: salePropertyId,
+            area_avg_rental: avgRental,
+            comparable_rental_count: comparableRentals.length,
+            estimated_monthly_rental: estimatedMonthlyRental,
+            gross_rental_yield: grossRentalYield,
+            net_rental_yield: netRentalYield,
+            total_monthly_expenses: monthlyExpenses,
+            net_monthly_cash_flow: netMonthlyCashFlow,
+            break_even_rental: breakEvenRental,
+            calculation_method: 'comparable_rentals',
+            confidence_score: Math.min(1.0, comparableRentals.length / 5) // Higher confidence with more comparables
+        };
+
+        const sql = `
+            INSERT OR REPLACE INTO rental_yield_analysis (
+                sale_property_id, area_avg_rental, comparable_rental_count, estimated_monthly_rental,
+                gross_rental_yield, net_rental_yield, total_monthly_expenses, net_monthly_cash_flow,
+                break_even_rental, calculation_method, confidence_score
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+        
+        const params = [
+            analysisData.sale_property_id, analysisData.area_avg_rental, analysisData.comparable_rental_count,
+            analysisData.estimated_monthly_rental, analysisData.gross_rental_yield, analysisData.net_rental_yield,
+            analysisData.total_monthly_expenses, analysisData.net_monthly_cash_flow, analysisData.break_even_rental,
+            analysisData.calculation_method, analysisData.confidence_score
+        ];
+
+        await this.run(sql, params);
+        return analysisData;
+    }
+
+    async getRentalYieldAnalysis(salePropertyId) {
+        return await this.get(
+            'SELECT * FROM rental_yield_analysis WHERE sale_property_id = ? ORDER BY analysis_date DESC LIMIT 1',
+            [salePropertyId]
+        );
+    }
+
+    // MARKET ANALYSIS METHODS
+
+    async getMarketAnalysis(location = {}, propertyType = null) {
+        return await this.get(`
+            SELECT * FROM market_analysis 
+            WHERE location_province = ? 
+            AND location_city = ?
+            AND (location_suburb = ? OR location_suburb IS NULL)
+            AND (property_type = ? OR property_type IS NULL)
+            ORDER BY calculated_at DESC 
+            LIMIT 1
+        `, [
+            location.province,
+            location.city,
+            location.suburb || null,
+            propertyType
+        ]);
+    }
+
+    async calculateMarketAnalysis(location = {}, propertyType = null) {
+        // Calculate sale market metrics
+        const saleMetrics = await this.get(`
+            SELECT 
+                AVG(price) as avg_sale_price,
+                COUNT(*) as total_sale_listings,
+                AVG(
+                    CASE 
+                        WHEN listing_date IS NOT NULL THEN 
+                            CAST((julianday('now') - julianday(listing_date)) AS INTEGER)
+                        ELSE 
+                            CAST((julianday('now') - julianday(scraped_at)) AS INTEGER)
+                    END
+                ) as avg_days_on_market_sale
+            FROM properties 
+            WHERE is_active = 1
+            AND location_province = ?
+            AND location_city = ?
+            ${location.suburb ? 'AND location_suburb = ?' : ''}
+            ${propertyType ? 'AND property_type = ?' : ''}
+        `, [
+            location.province,
+            location.city,
+            ...(location.suburb ? [location.suburb] : []),
+            ...(propertyType ? [propertyType] : [])
+        ]);
+
+        // Calculate rental market metrics
+        const rentalMetrics = await this.get(`
+            SELECT 
+                AVG(rental_price) as avg_rental_price,
+                COUNT(*) as total_rental_listings,
+                AVG(
+                    CASE 
+                        WHEN listing_date IS NOT NULL THEN 
+                            CAST((julianday('now') - julianday(listing_date)) AS INTEGER)
+                        ELSE 
+                            CAST((julianday('now') - julianday(scraped_at)) AS INTEGER)
+                    END
+                ) as avg_days_on_market_rental
+            FROM rental_properties 
+            WHERE is_active = 1
+            AND location_province = ?
+            AND location_city = ?
+            ${location.suburb ? 'AND location_suburb = ?' : ''}
+            ${propertyType ? 'AND property_type = ?' : ''}
+        `, [
+            location.province,
+            location.city,
+            ...(location.suburb ? [location.suburb] : []),
+            ...(propertyType ? [propertyType] : [])
+        ]);
+
+        // Calculate investment metrics
+        let avgPriceToRentRatio = null;
+        let avgGrossYield = null;
+        
+        if (saleMetrics.avg_sale_price && rentalMetrics.avg_rental_price) {
+            avgPriceToRentRatio = saleMetrics.avg_sale_price / (rentalMetrics.avg_rental_price * 12);
+            avgGrossYield = (rentalMetrics.avg_rental_price * 12 / saleMetrics.avg_sale_price) * 100;
+        }
+
+        // Determine market temperature based on days on market
+        let marketTemperature = 'cool';
+        const avgDaysOnMarket = (saleMetrics.avg_days_on_market_sale + rentalMetrics.avg_days_on_market_rental) / 2;
+        if (avgDaysOnMarket < 30) marketTemperature = 'hot';
+        else if (avgDaysOnMarket < 60) marketTemperature = 'warm';
+        else if (avgDaysOnMarket > 120) marketTemperature = 'cold';
+
+        const marketAnalysis = {
+            location_province: location.province,
+            location_city: location.city,
+            location_suburb: location.suburb || null,
+            property_type: propertyType,
+            avg_sale_price: saleMetrics.avg_sale_price,
+            median_sale_price: saleMetrics.avg_sale_price, // Simplified - could calculate actual median
+            avg_days_on_market_sale: saleMetrics.avg_days_on_market_sale,
+            total_sale_listings: saleMetrics.total_sale_listings,
+            avg_rental_price: rentalMetrics.avg_rental_price,
+            median_rental_price: rentalMetrics.avg_rental_price, // Simplified
+            avg_days_on_market_rental: rentalMetrics.avg_days_on_market_rental,
+            total_rental_listings: rentalMetrics.total_rental_listings,
+            avg_price_to_rent_ratio: avgPriceToRentRatio,
+            avg_gross_yield: avgGrossYield,
+            market_temperature: marketTemperature,
+            analysis_period_start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            analysis_period_end: new Date().toISOString().split('T')[0]
+        };
+
+        // Insert into database
+        const sql = `
+            INSERT OR REPLACE INTO market_analysis (
+                location_province, location_city, location_suburb, property_type,
+                avg_sale_price, median_sale_price, avg_days_on_market_sale, total_sale_listings,
+                avg_rental_price, median_rental_price, avg_days_on_market_rental, total_rental_listings,
+                avg_price_to_rent_ratio, avg_gross_yield, market_temperature,
+                analysis_period_start, analysis_period_end
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+        
+        const params = [
+            marketAnalysis.location_province, marketAnalysis.location_city, marketAnalysis.location_suburb,
+            marketAnalysis.property_type, marketAnalysis.avg_sale_price, marketAnalysis.median_sale_price,
+            marketAnalysis.avg_days_on_market_sale, marketAnalysis.total_sale_listings,
+            marketAnalysis.avg_rental_price, marketAnalysis.median_rental_price,
+            marketAnalysis.avg_days_on_market_rental, marketAnalysis.total_rental_listings,
+            marketAnalysis.avg_price_to_rent_ratio, marketAnalysis.avg_gross_yield,
+            marketAnalysis.market_temperature, marketAnalysis.analysis_period_start,
+            marketAnalysis.analysis_period_end
+        ];
+
+        await this.run(sql, params);
+        return marketAnalysis;
+    }
+
+    async getRentalMarketStats(filters = {}) {
+        const stats = {};
+        
+        // Total rental properties
+        const totalResult = await this.get('SELECT COUNT(*) as count FROM rental_properties WHERE is_active = 1');
+        stats.total_rental_properties = totalResult.count;
+
+        // Rental price statistics
+        const rentalStats = await this.get(`
+            SELECT 
+                AVG(rental_price) as avg_rental_price,
+                MIN(rental_price) as min_rental_price,
+                MAX(rental_price) as max_rental_price
+            FROM rental_properties 
+            WHERE is_active = 1 AND rental_price > 0
+        `);
+        stats.rental_price_stats = rentalStats;
+
+        // Rental properties by location (top 10)
+        const locationStats = await this.query(`
+            SELECT 
+                location_city,
+                COUNT(*) as count,
+                AVG(rental_price) as avg_rental_price
+            FROM rental_properties 
+            WHERE is_active = 1 AND location_city IS NOT NULL
+            GROUP BY location_city
+            ORDER BY count DESC
+            LIMIT 10
+        `);
+        stats.top_rental_locations = locationStats;
+
+        // Furnished vs unfurnished distribution
+        const furnishedStats = await this.query(`
+            SELECT 
+                furnished_status,
+                COUNT(*) as count,
+                AVG(rental_price) as avg_price
+            FROM rental_properties 
+            WHERE is_active = 1 AND furnished_status IS NOT NULL
+            GROUP BY furnished_status
+        `);
+        stats.furnished_distribution = furnishedStats;
+
+        return stats;
+    }
+
+    async getInvestmentOpportunities(filters = {}, limit = 10) {
+        // Get properties with calculated rental yields
+        return await this.query(`
+            SELECT 
+                p.*,
+                rya.gross_rental_yield,
+                rya.net_rental_yield,
+                rya.net_monthly_cash_flow,
+                rya.estimated_monthly_rental,
+                rya.confidence_score
+            FROM properties p
+            JOIN rental_yield_analysis rya ON p.id = rya.sale_property_id
+            WHERE p.is_active = 1
+            ${filters.min_yield ? 'AND rya.gross_rental_yield >= ?' : ''}
+            ${filters.location_city ? 'AND p.location_city = ?' : ''}
+            ${filters.max_price ? 'AND p.price <= ?' : ''}
+            ORDER BY rya.gross_rental_yield DESC
+            LIMIT ?
+        `, [
+            ...(filters.min_yield ? [filters.min_yield] : []),
+            ...(filters.location_city ? [filters.location_city] : []),
+            ...(filters.max_price ? [filters.max_price] : []),
+            limit
+        ]);
     }
 }
 
