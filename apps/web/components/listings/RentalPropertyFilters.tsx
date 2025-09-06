@@ -1,10 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { IPropertyFilters as FilterProps } from "../../lib/api";
-import { MagnifyingGlassIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { IRentalPropertyFilters } from "../../lib/api";
+import { XMarkIcon } from "@heroicons/react/24/outline";
 import { Filter, Search, X } from "lucide-react";
-import { SidebarInput } from "../ui/sidebar";
 import { Input } from "../ui/input";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
@@ -16,15 +15,15 @@ import {
   SelectValue,
 } from "../ui/select";
 
-interface PropertyFiltersComponentProps {
-  filters: FilterProps;
-  onFilterChange: (filters: Partial<FilterProps>) => void;
+interface IRentalPropertyFiltersProps {
+  filters: IRentalPropertyFilters;
+  onFilterChange: (filters: Partial<IRentalPropertyFilters>) => void;
 }
 
-export default function PropertyFilters({
+export default function RentalPropertyFilters({
   filters,
   onFilterChange,
-}: PropertyFiltersComponentProps) {
+}: IRentalPropertyFiltersProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -32,20 +31,19 @@ export default function PropertyFilters({
     "house",
     "apartment",
     "townhouse",
-    "vacant land",
+    "studio",
     "commercial",
   ];
 
-  const sources = ["property24.com", "privateproperty.co.za"];
-
   const cities = [
-    "Cape Town",
-    "Johannesburg", 
+    "Somerset West",
+    "Cape Town", 
+    "Johannesburg",
     "Pretoria",
-    "Durban",
-    "Port Elizabeth",
-    "Bloemfontein"
+    "Durban"
   ];
+
+  const sources = ["property24.com", "privateproperty.co.za"];
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,33 +52,37 @@ export default function PropertyFilters({
 
   const clearFilters = () => {
     onFilterChange({
-      min_price: undefined,
-      max_price: undefined,
+      min_rental_price: undefined,
+      max_rental_price: undefined,
       bedrooms: undefined,
       bathrooms: undefined,
       property_type: undefined,
       location_city: undefined,
       location_suburb: undefined,
       source_website: undefined,
-      floor_area_range: undefined,
+      furnished_status: undefined,
+      pet_policy: undefined,
+      available_from: undefined,
     });
     setSearchTerm("");
   };
 
-  const removeFilter = (filterKey: keyof FilterProps) => {
+  const removeFilter = (filterKey: keyof IRentalPropertyFilters) => {
     onFilterChange({ [filterKey]: undefined });
   };
 
   const hasActiveFilters = Boolean(
-    filters.min_price ||
-      filters.max_price ||
+    filters.min_rental_price ||
+      filters.max_rental_price ||
       filters.bedrooms ||
       filters.bathrooms ||
       filters.property_type ||
       filters.location_city ||
       filters.location_suburb ||
       filters.source_website ||
-      filters.floor_area_range
+      filters.furnished_status ||
+      filters.pet_policy ||
+      filters.available_from
   );
 
   return (
@@ -129,10 +131,10 @@ export default function PropertyFilters({
               <Input
                 type="number"
                 placeholder="Min"
-                value={filters.min_price || ""}
+                value={filters.min_rental_price || ""}
                 onChange={(e) =>
                   onFilterChange({
-                    min_price: e.target.value
+                    min_rental_price: e.target.value
                       ? Number(e.target.value)
                       : undefined,
                   })
@@ -141,10 +143,10 @@ export default function PropertyFilters({
               <Input
                 type="number"
                 placeholder="Max"
-                value={filters.max_price || ""}
+                value={filters.max_rental_price || ""}
                 onChange={(e) =>
                   onFilterChange({
-                    max_price: e.target.value
+                    max_rental_price: e.target.value
                       ? Number(e.target.value)
                       : undefined,
                   })
@@ -268,6 +270,52 @@ export default function PropertyFilters({
             />
           </div>
 
+          {/* Furnished Status */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-secondary-700">
+              Furnished Status
+            </label>
+            <Select
+              value={filters.furnished_status || ""}
+              onValueChange={(value) =>
+                onFilterChange({ furnished_status: value as any || undefined })
+              }
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Any" className="w-full" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="furnished">Furnished</SelectItem>
+                <SelectItem value="semi-furnished">Semi-Furnished</SelectItem>
+                <SelectItem value="unfurnished">Unfurnished</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Pet Policy */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-secondary-700">
+              Pet Policy
+            </label>
+            <Select
+              value={filters.pet_policy || ""}
+              onValueChange={(value) =>
+                onFilterChange({ pet_policy: value as any || undefined })
+              }
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Any" className="w-full" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="allowed">Pets Allowed</SelectItem>
+                <SelectItem value="not_allowed">No Pets</SelectItem>
+                <SelectItem value="cats_only">Cats Only</SelectItem>
+                <SelectItem value="dogs_only">Dogs Only</SelectItem>
+                <SelectItem value="negotiable">Negotiable</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           {/* Source Website */}
           <div className="space-y-2">
             <label className="block text-sm font-medium text-secondary-700">
@@ -283,7 +331,6 @@ export default function PropertyFilters({
                 <SelectValue placeholder="Any" className="w-full" />
               </SelectTrigger>
               <SelectContent>
-                <option value="">All Sources</option>
                 {sources.map((source) => (
                   <SelectItem key={source} value={source}>
                     {source === "property24.com"
@@ -295,33 +342,18 @@ export default function PropertyFilters({
             </Select>
           </div>
 
-          {/* Floor Size */}
+          {/* Available From */}
           <div className="space-y-2">
             <label className="block text-sm font-medium text-secondary-700">
-              Floor Size
+              Available From
             </label>
-            <Select
-              value={filters.floor_area_range || ""}
-              onValueChange={(value) =>
-                onFilterChange({
-                  floor_area_range: value || undefined,
-                })
+            <Input
+              type="date"
+              value={filters.available_from || ""}
+              onChange={(e) =>
+                onFilterChange({ available_from: e.target.value || undefined })
               }
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Any" className="w-full" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="0-50">Under 50 m²</SelectItem>
-                <SelectItem value="50-100">50-100 m²</SelectItem>
-                <SelectItem value="100-150">100-150 m²</SelectItem>
-                <SelectItem value="150-200">150-200 m²</SelectItem>
-                <SelectItem value="200-300">200-300 m²</SelectItem>
-                <SelectItem value="300-500">300-500 m²</SelectItem>
-                <SelectItem value="500+">Over 500 m²</SelectItem>
-                <SelectItem value="not_listed">Size Not Listed</SelectItem>
-              </SelectContent>
-            </Select>
+            />
           </div>
 
           {/* Results Per Page */}
@@ -352,37 +384,37 @@ export default function PropertyFilters({
       {/* Active Filters Display */}
       {hasActiveFilters && (
         <div className="flex flex-wrap gap-2 pt-4 border-t border-secondary-200">
-          {filters.min_price && (
+          {filters.min_rental_price && (
             <Badge variant="default" className="flex items-center gap-1">
               Min:{" "}
               {new Intl.NumberFormat("en-ZA", {
                 style: "currency",
                 currency: "ZAR",
                 minimumFractionDigits: 0,
-              }).format(filters.min_price)}
+              }).format(filters.min_rental_price)}
               <Button
                 variant="ghost"
                 size="sm"
                 className="h-4 w-4 p-0 hover:bg-transparent"
-                onClick={() => removeFilter("min_price")}
+                onClick={() => removeFilter("min_rental_price")}
               >
                 <X className="h-3 w-3" />
               </Button>
             </Badge>
           )}
-          {filters.max_price && (
+          {filters.max_rental_price && (
             <Badge variant="secondary" className="flex items-center gap-1">
               Max:{" "}
               {new Intl.NumberFormat("en-ZA", {
                 style: "currency",
                 currency: "ZAR",
                 minimumFractionDigits: 0,
-              }).format(filters.max_price)}
+              }).format(filters.max_rental_price)}
               <Button
                 variant="ghost"
                 size="sm"
                 className="h-4 w-4 p-0 hover:bg-transparent"
-                onClick={() => removeFilter("max_price")}
+                onClick={() => removeFilter("max_rental_price")}
               >
                 <X className="h-3 w-3" />
               </Button>
@@ -456,6 +488,32 @@ export default function PropertyFilters({
               </Button>
             </Badge>
           )}
+          {filters.furnished_status && (
+            <Badge variant="secondary" className="flex items-center gap-1 capitalize">
+              {filters.furnished_status.replace('_', ' ')}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-4 w-4 p-0 hover:bg-transparent"
+                onClick={() => removeFilter("furnished_status")}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </Badge>
+          )}
+          {filters.pet_policy && (
+            <Badge variant="secondary" className="flex items-center gap-1 capitalize">
+              {filters.pet_policy.replace('_', ' ')}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-4 w-4 p-0 hover:bg-transparent"
+                onClick={() => removeFilter("pet_policy")}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </Badge>
+          )}
           {filters.source_website && (
             <Badge variant="secondary" className="flex items-center gap-1">
               {filters.source_website === "property24.com"
@@ -471,20 +529,14 @@ export default function PropertyFilters({
               </Button>
             </Badge>
           )}
-          {filters.floor_area_range && (
+          {filters.available_from && (
             <Badge variant="secondary" className="flex items-center gap-1">
-              {filters.floor_area_range === "not_listed"
-                ? "Size Not Listed"
-                : filters.floor_area_range === "0-50"
-                  ? "Under 50 m²"
-                  : filters.floor_area_range === "500+"
-                    ? "Over 500 m²"
-                    : filters.floor_area_range.replace("-", "-") + " m²"}
+              Available: {filters.available_from}
               <Button
                 variant="ghost"
                 size="sm"
                 className="h-4 w-4 p-0 hover:bg-transparent"
-                onClick={() => removeFilter("floor_area_range")}
+                onClick={() => removeFilter("available_from")}
               >
                 <X className="h-3 w-3" />
               </Button>
