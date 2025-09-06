@@ -2,9 +2,8 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import QueryProvider from "../components/QueryProvider";
-import { AppSidebar } from "../components/layout/Sidebar";
-import { SidebarProvider, SidebarTrigger } from "../components/ui/sidebar";
-import TopBar from "../components/layout/TopBar";
+import { AuthProvider } from "../contexts/AuthContext";
+import ProtectedLayout from "../components/layout/ProtectedLayout";
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
   variable: "--font-geist-sans",
@@ -15,7 +14,7 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Property Scraper Dashboard",
+  title: "KSP Property Scraper",
   description: "Real estate data dashboard with Property24 and Private Property scraping",
 };
 
@@ -28,18 +27,11 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background min-h-screen`}>
         <QueryProvider>
-          <SidebarProvider>
-            <AppSidebar />
-            <main className="flex flex-1 flex-col transition-all duration-300 ease-in-out">
-              <div className="flex items-center gap-2 p-4 border-b">
-                <SidebarTrigger />
-                <TopBar />
-              </div>
-              <div className="flex-1 overflow-y-auto p-6">
-                {children}
-              </div>
-            </main>
-          </SidebarProvider>
+          <AuthProvider>
+            <ProtectedLayout>
+              {children}
+            </ProtectedLayout>
+          </AuthProvider>
         </QueryProvider>
       </body>
     </html>
