@@ -190,6 +190,7 @@ class Database {
                 params.push(min, max);
             }
         }
+        sql += " AND is_active = 1";
 
         sql += ' ORDER BY scraped_at DESC LIMIT ? OFFSET ?';
         params.push(limit, offset);
