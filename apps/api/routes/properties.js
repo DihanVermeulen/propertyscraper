@@ -1,9 +1,10 @@
 const express = require('express');
 const database = require('../db/database');
+const { optionalAuth, requireAuth } = require('../middleware/auth');
 const router = express.Router();
 
-// Fetch properties with filters
-router.get('/properties', async (req, res) => {
+// Fetch properties with filters (optionally authenticated for personalized results)
+router.get('/properties', optionalAuth, async (req, res) => {
     try {
         const filters = req.query || {};
         const limit = parseInt(filters.limit, 10) || 10;
@@ -38,8 +39,8 @@ router.get('/properties/:id', async (req, res) => {
     }
 });
 
-// Fetch dashboard statistics
-router.get('/dashboard', async (req, res) => {
+// Fetch dashboard statistics (require authentication)
+router.get('/dashboard', ...requireAuth, async (req, res) => {
     try {
         const stats = await database.getDashboardStats();
         res.json(stats);
@@ -68,8 +69,8 @@ router.get('/properties/:id/price-history', async (req, res) => {
     }
 });
 
-// Get aggregated price history data for charts
-router.get('/price-history', async (req, res) => {
+// Get aggregated price history data for charts (require authentication)
+router.get('/price-history', ...requireAuth, async (req, res) => {
     try {
         const filters = {
             location_city: req.query.location_city,
@@ -93,8 +94,8 @@ router.get('/price-history', async (req, res) => {
     }
 });
 
-// Get time on market statistics
-router.get('/time-on-market', async (req, res) => {
+// Get time on market statistics (require authentication)
+router.get('/time-on-market', ...requireAuth, async (req, res) => {
     try {
         const filters = {
             location_city: req.query.location_city,
