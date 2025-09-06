@@ -241,6 +241,7 @@ class Property24Scraper {
     const location = options.location || this.defaultLocation;
     const locationString = `${location.city}, ${location.province}, ${location.country}`;
     const maxPages = options.maxPages || 100; // High limit, will use dynamic detection
+    const forceFullScan = options.forceFullScan || false; // Force scan all detected pages
 
     // Job record is managed by JobManager, not by scraper directly
     // const job = await database.insertScrapeJob({...}); // REMOVED - JobManager handles this
@@ -279,6 +280,7 @@ class Property24Scraper {
       // Start pagination loop
       let currentPage = 1;
       let hasMorePages = true;
+      let expectedProperties = 0; // Declare expectedProperties at function scope
 
       while (hasMorePages && currentPage <= maxPages) {
         logger.info(`=== SCRAPING PAGE ${currentPage} ===`);
@@ -361,31 +363,21 @@ class Property24Scraper {
         let lastPageNumber = maxPages;
         if (currentPage === 1) {
           try {
-            const lastPageLink = $('.p24_paginator a[title="Last Page"]');
-            if (lastPageLink.length > 0) {
-              const lastPageUrl = lastPageLink.attr("href");
-              const match = lastPageUrl.match(/\/p(\d+)/);
-              if (match && match[1]) {
-                lastPageNumber = parseInt(match[1], 10);
-                logger.info(`Detected last page: ${lastPageNumber}`);
-              }
-            } else {
-              // If no "Last Page" link, get the highest page number shown
-              const pageLinks = $('.p24_paginator a[href*="/p"]');
-              pageLinks.each((i, el) => {
-                const pageUrl = $(el).attr("href");
-                const match = pageUrl.match(/\/p(\d+)/);
-                if (match && match[1]) {
-                  lastPageNumber = Math.max(
-                    lastPageNumber,
-                    parseInt(match[1], 10)
-                  );
-                }
-              });
-              logger.info(`Detected last page from links: ${lastPageNumber}`);
+            lastPageNumber = this.extractLastPageNumber($);
+            expectedProperties = this.estimateExpectedProperties($, lastPageNumber);
+            
+            logger.info(`Detected last page: ${lastPageNumber}`);
+            logger.info(`Expected to find approximately ${expectedProperties} properties in total`);
+            
+            // If we detected a very high number, cap it for safety
+            if (lastPageNumber > 500) {
+              logger.warn(`Detected unusually high page count (${lastPageNumber}), capping at 500 for safety`);
+              lastPageNumber = 500;
             }
           } catch (err) {
             logger.warn(`Could not detect last page number: ${err.message}`);
+            // Fall back to a high number to ensure we get all pages
+            lastPageNumber = 100;
           }
         }
 
@@ -551,35 +543,21 @@ class Property24Scraper {
           }
         }
 
-        // Check for next page link with multiple selectors
-        const nextPageSelectors = [
-          '.p24_paginator a[title="Next"]',
-          '.pagination a[title="Next"]',
-          '.paginator a:contains("Next")',
-          ".pagination .next-page",
-          'a[href*="/p' + (currentPage + 1) + '"]',
-        ];
-
-        let hasNextPage = false;
-        for (const selector of nextPageSelectors) {
-          try {
-            const nextButton = $(selector);
-            if (nextButton.length > 0) {
-              hasNextPage = true;
-              logger.info(`Next page link found with selector: ${selector}`);
-              break;
-            }
-          } catch (e) {
-            // Continue to next selector
-          }
-        }
-
-        // Also check if listings exist on next page by checking current page results
+        // Enhanced next page detection with multiple strategies
+        let hasNextPage = this.detectNextPage($, currentPage, lastPageNumber);
+        
+        // Also check if listings exist on current page
         if (hasNextPage && listings.length === 0) {
           hasNextPage = false;
           logger.info(
             "Next page link found but no listings on current page, assuming no more content"
           );
+        }
+        
+        // Force full scan logic: continue even if next page detection fails, as long as we haven't reached detected limit
+        if (forceFullScan && currentPage < lastPageNumber && !hasNextPage) {
+          hasNextPage = true;
+          logger.info(`Force full scan enabled: continuing to page ${currentPage + 1} despite no next page link`);
         }
 
         if (hasNextPage && currentPage < lastPageNumber) {
@@ -589,10 +567,11 @@ class Property24Scraper {
           );
         } else {
           hasMorePages = false;
-          const reason =
-            currentPage >= lastPageNumber
-              ? "reached last page"
-              : "no more pages found";
+          const reason = currentPage >= lastPageNumber
+            ? "reached detected last page"
+            : listings.length === 0
+            ? "no listings found on current page"
+            : "no next page link found";
           logger.info(
             `Pagination ended: ${reason}. Scraped ${currentPage} of ${lastPageNumber} pages.`
           );
@@ -606,6 +585,27 @@ class Property24Scraper {
         `Property24 scraping completed. Scraped ${currentPage} pages. Found: ${propertiesFound}, New: ${propertiesNew}, Updated: ${propertiesUpdated}`
       );
       
+      // Verify total property count and adjust delisting confidence
+      const totalListingsFound = foundExternalIds.length;
+      const completenessRatio = expectedProperties > 0 ? totalListingsFound / expectedProperties : 1;
+      let gracePeriodHours = 48; // Default grace period
+      
+      logger.info(`=== SCRAPING COMPLETENESS ANALYSIS ===`);
+      logger.info(`Expected properties: ${expectedProperties}`);
+      logger.info(`Found properties: ${totalListingsFound}`);
+      logger.info(`Completeness ratio: ${(completenessRatio * 100).toFixed(1)}%`);
+      
+      // Adjust grace period based on scraping completeness
+      if (completenessRatio < 0.8) {
+        gracePeriodHours = 72; // Extended grace period for incomplete scrapes
+        logger.warn(`Possible incomplete scrape (${(completenessRatio * 100).toFixed(1)}% found). Extending grace period to ${gracePeriodHours} hours.`);
+      } else if (completenessRatio >= 0.95) {
+        gracePeriodHours = 36; // Shorter grace period for complete scrapes
+        logger.info(`High completeness scrape (${(completenessRatio * 100).toFixed(1)}% found). Using shorter grace period of ${gracePeriodHours} hours.`);
+      } else {
+        logger.info(`Normal completeness scrape (${(completenessRatio * 100).toFixed(1)}% found). Using standard grace period of ${gracePeriodHours} hours.`);
+      }
+      
       // Run delisting detection after successful scraping
       if (foundExternalIds.length > 0) {
         try {
@@ -617,9 +617,10 @@ class Property24Scraper {
             foundExternalIds,
             {
               city: location.city,
-              province: location.province
+              province: location.province,
+              completenessRatio: completenessRatio // Pass completeness info for enhanced decision making
             },
-            48 // 48 hour grace period
+            gracePeriodHours // Dynamic grace period based on scraping completeness
           );
           
           logger.info(`Delisting detection completed: ${delistingResult.propertiesDelisted} properties delisted, ${delistingResult.propertiesRelisted} relisted`);
@@ -628,7 +629,8 @@ class Property24Scraper {
           // Don't fail the entire scrape if delisting detection fails
         }
       } else {
-        logger.info('No properties found, skipping delisting detection');
+        logger.warn('No properties found during scraping - this may indicate a scraping issue!');
+        logger.info('Skipping delisting detection due to no properties found');
       }
       
     } catch (error) {
@@ -1174,6 +1176,245 @@ class Property24Scraper {
     }
 
     return property;
+  }
+
+  /**
+   * Detect if there's a next page using multiple strategies
+   * @param {Object} $ - Cheerio instance
+   * @param {number} currentPage - Current page number
+   * @param {number} lastPageNumber - Detected last page number
+   * @returns {boolean} True if next page exists
+   */
+  detectNextPage($, currentPage, lastPageNumber) {
+    try {
+      // Strategy 1: Look for "Next" buttons with multiple selectors
+      const nextPageSelectors = [
+        '.p24_pager a:contains("Next")',               // New structure
+        '.p24_paginator a[title="Next"]',             // Original structure
+        '.pagination a[title="Next"]',                 // Generic
+        '.p24_pager .pull-right:not(.text-muted)',     // Right-side navigation (from your HTML)
+        'a:contains("Next"):not(.text-muted)',        // Any Next link that's not disabled
+        '.paginator a:contains("Next")',               // Alternative
+        '.pagination .next-page',                      // Generic next page class
+      ];
+      
+      for (const selector of nextPageSelectors) {
+        const nextButton = $(selector);
+        if (nextButton.length > 0) {
+          // Check if the button is disabled (common pattern)
+          const isDisabled = nextButton.hasClass('disabled') || 
+                           nextButton.hasClass('text-muted') ||
+                           nextButton.attr('href') === 'javascript:;' ||
+                           nextButton.closest('li').hasClass('disabled');
+          
+          if (!isDisabled) {
+            logger.info(`Next page link found with selector: ${selector}`);
+            return true;
+          }
+        }
+      }
+      
+      // Strategy 2: Look for specific page number link (current + 1)
+      const nextPageNum = currentPage + 1;
+      const specificPageSelectors = [
+        `a[data-pagenumber="${nextPageNum}"]`,        // Data attribute
+        `a[href*="/p${nextPageNum}"]`,                // URL pattern
+        `.pagination a:contains("${nextPageNum}")`,   // Text content
+      ];
+      
+      for (const selector of specificPageSelectors) {
+        if ($(selector).length > 0) {
+          logger.info(`Found next page (${nextPageNum}) link with selector: ${selector}`);
+          return true;
+        }
+      }
+      
+      // Strategy 3: Check if we're below the detected last page
+      if (currentPage < lastPageNumber) {
+        logger.info(`Current page ${currentPage} is below detected last page ${lastPageNumber}, assuming next page exists`);
+        return true;
+      }
+      
+      logger.info(`No next page detected for page ${currentPage}`);
+      return false;
+      
+    } catch (error) {
+      logger.warn(`Error in next page detection: ${error.message}`);
+      // Conservative fallback - assume next page exists if we're not at detected limit
+      return currentPage < lastPageNumber;
+    }
+  }
+
+  /**
+   * Extract the last page number from pagination HTML using multiple strategies
+   * @param {Object} $ - Cheerio instance
+   * @returns {number} Last page number
+   */
+  extractLastPageNumber($) {
+    let highestPage = 1;
+    
+    try {
+      // Strategy 1: Try multiple pagination selectors with data-pagenumber attributes
+      const paginationSelectors = [
+        '.p24_pager .pagination li a[data-pagenumber]',  // New structure from provided HTML
+        '.p24_paginator a[data-pagenumber]',            // Alternative with data attribute
+        '.pagination a[data-pagenumber]',               // Generic pagination with data attribute
+        '.p24_pager a[href*="/p"]',                     // New structure URL-based
+        '.p24_paginator a[href*="/p"]',                 // Current logic
+        '.pagination a[href*="/p"]',                    // Alternative
+        '.p24_results .pagination a',                   // Another alternative
+        'ul.pagination li a',                           // Generic
+      ];
+      
+      // Try each selector
+      for (const selector of paginationSelectors) {
+        const pageLinks = $(selector);
+        if (pageLinks.length > 0) {
+          logger.info(`Found pagination links using selector: ${selector} (${pageLinks.length} links)`);
+          
+          pageLinks.each((i, el) => {
+            // Try getting page number from data attribute first
+            const dataPageNumber = $(el).attr('data-pagenumber');
+            if (dataPageNumber) {
+              const pageNum = parseInt(dataPageNumber, 10);
+              if (!isNaN(pageNum) && pageNum > highestPage) {
+                highestPage = pageNum;
+                logger.info(`Found page number from data-pagenumber: ${pageNum}`);
+              }
+            } 
+            // Then try from URL
+            else {
+              const href = $(el).attr('href');
+              if (href) {
+                const match = href.match(/\/p(\d+)/);
+                if (match && match[1]) {
+                  const pageNum = parseInt(match[1], 10);
+                  if (!isNaN(pageNum) && pageNum > highestPage) {
+                    highestPage = pageNum;
+                    logger.info(`Found page number from URL: ${pageNum}`);
+                  }
+                }
+              }
+            }
+          });
+          
+          // If we found pages with this selector, stop checking others
+          if (highestPage > 1) {
+            logger.info(`Successfully detected ${highestPage} pages using selector: ${selector}`);
+            break;
+          }
+        }
+      }
+      
+      // Strategy 2: Look for "Last Page" or "Last" links specifically
+      if (highestPage <= 1) {
+        const lastPageSelectors = [
+          'a[title*="Last"]',
+          'a:contains("Last")',
+          'a:contains("»")',
+          '.pagination li:last-child a'
+        ];
+        
+        for (const selector of lastPageSelectors) {
+          const lastLink = $(selector);
+          if (lastLink.length > 0) {
+            const href = lastLink.attr('href');
+            if (href) {
+              const match = href.match(/\/p(\d+)/);
+              if (match && match[1]) {
+                highestPage = parseInt(match[1], 10);
+                logger.info(`Found last page from "Last" link: ${highestPage}`);
+                break;
+              }
+            }
+          }
+        }
+      }
+      
+      // Strategy 3: Look for text indicators like "Showing 1-20 of 937 properties"
+      if (highestPage <= 1) {
+        const resultCountSelectors = [
+          '.p24_resultCount',
+          '.resultCount',
+          '.results-count',
+          '.p24_results .count',
+          '.search-results-count'
+        ];
+        
+        for (const selector of resultCountSelectors) {
+          const resultsText = $(selector).text();
+          if (resultsText) {
+            // Look for patterns like "Showing X of Y properties" or "Y properties found"
+            const patterns = [
+              /of\s+(\d{1,3}(?:,\d{3})*)\s+properties/i,
+              /(\d{1,3}(?:,\d{3})*)\s+properties\s+found/i,
+              /total[:\s]*(\d{1,3}(?:,\d{3})*)/i
+            ];
+            
+            for (const pattern of patterns) {
+              const totalMatch = resultsText.match(pattern);
+              if (totalMatch && totalMatch[1]) {
+                const totalProps = parseInt(totalMatch[1].replace(/,/g, ''), 10);
+                if (!isNaN(totalProps) && totalProps > 0) {
+                  // Assume 20 properties per page (Property24's typical page size)
+                  highestPage = Math.ceil(totalProps / 20);
+                  logger.info(`Estimated ${highestPage} pages from total property count: ${totalProps}`);
+                  break;
+                }
+              }
+            }
+            
+            if (highestPage > 1) break;
+          }
+        }
+      }
+      
+    } catch (error) {
+      logger.warn(`Error in pagination detection: ${error.message}`);
+      // If anything fails, return a conservative estimate
+      highestPage = 100; // High default to ensure we don't miss properties
+    }
+    
+    return Math.max(highestPage, 1); // Never return less than 1
+  }
+
+  /**
+   * Estimate expected number of properties based on pagination and current page
+   * @param {Object} $ - Cheerio instance
+   * @param {number} totalPages - Total number of pages detected
+   * @returns {number} Estimated total properties
+   */
+  estimateExpectedProperties($, totalPages) {
+    try {
+      // Try to get current page property count
+      const currentPageProperties = $('.p24_tileContainer, .js_resultTile').length;
+      
+      // Try to get total from result count text
+      const resultCountSelectors = ['.p24_resultCount', '.resultCount', '.results-count'];
+      for (const selector of resultCountSelectors) {
+        const resultsText = $(selector).text();
+        const totalMatch = resultsText.match(/of\s+(\d{1,3}(?:,\d{3})*)\s+properties/i);
+        if (totalMatch && totalMatch[1]) {
+          const totalProps = parseInt(totalMatch[1].replace(/,/g, ''), 10);
+          if (!isNaN(totalProps) && totalProps > 0) {
+            return totalProps;
+          }
+        }
+      }
+      
+      // Fallback: estimate based on current page and total pages
+      if (currentPageProperties > 0) {
+        // Assume all pages except possibly the last have the same number of properties
+        return Math.floor(currentPageProperties * totalPages * 0.95); // 95% to account for last page
+      }
+      
+      // Final fallback: assume 20 per page (Property24's typical)
+      return totalPages * 20;
+      
+    } catch (error) {
+      logger.warn(`Error estimating expected properties: ${error.message}`);
+      return totalPages * 20; // Safe fallback
+    }
   }
 
   /**
