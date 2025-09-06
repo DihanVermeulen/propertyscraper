@@ -1,12 +1,22 @@
 import axios from "axios";
+import { IDashboardStats } from "../@types/dashboard";
+import { IPropertiesResponse, IProperty, IPropertyExpenses, IPropertyFilters, IRentalPropertiesResponse, IRentalProperty, IRentalPropertyFilters } from "../@types/property";
+import { IPriceHistoryData, IPriceHistoryResponse, ITimeOnMarketResponse } from "../@types/analytics";
+import { IInvestmentOpportunity, IMarketAnalysis, IRentalMarketStats, IRentalYieldAnalysis } from "../@types/investor";
+import { IScrapeJob, IScraperConfig, IScraperStatus } from "../@types/scraper";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+// Use relative path in development for Next.js rewrites, absolute URL for production
+const API_BASE_URL = process.env.NODE_ENV === 'development' 
+  ? '' // Use relative paths for Next.js rewrites
+  : process.env.NEXT_PUBLIC_API_URL || "http://localhost:3002";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },
+  withCredentials: true, // Enable credentials for cookies
+  timeout: 10000, // 10 second timeout
 });
 
 // Response interceptor for error handling
@@ -24,208 +34,6 @@ api.interceptors.response.use(
   }
 );
 
-// Types
-export interface Property {
-  id: number;
-  external_id: string;
-  title: string;
-  description?: string;
-  price?: number;
-  price_currency: string;
-  property_type?: string;
-  bedrooms?: number;
-  bathrooms?: number;
-  parking_spaces?: number;
-  floor_area?: number;
-  erf_size?: number;
-  location_province?: string;
-  location_city?: string;
-  location_suburb?: string;
-  location_address?: string;
-  latitude?: number;
-  longitude?: number;
-  source_website: string;
-  source_url: string;
-  images?: string[];
-  features?: string[];
-  agent_name?: string;
-  agent_phone?: string;
-  agent_email?: string;
-  listing_date?: string;
-  scraped_at: string;
-  updated_at: string;
-  is_active: boolean;
-}
-
-export interface IPropertyFilters {
-  min_price?: number;
-  max_price?: number;
-  bedrooms?: number;
-  bathrooms?: number;
-  property_type?: string;
-  location_city?: string;
-  location_suburb?: string;
-  source_website?: string;
-  limit?: number;
-  offset?: number;
-}
-
-export interface IPropertiesResponse {
-  properties: Property[];
-  total: number;
-  limit: number;
-  offset: number;
-}
-
-export interface IDashboardStats {
-  total_properties: number;
-  price_stats: {
-    avg_price: number;
-    min_price: number;
-    max_price: number;
-  };
-  top_locations: Array<{
-    location_city: string;
-    count: number;
-    avg_price: number;
-  }>;
-  source_distribution: Array<{
-    source_website: string;
-    count: number;
-  }>;
-  recent_activity: Array<{
-    date: string;
-    properties_scraped: number;
-  }>;
-}
-
-export interface ILogEntry {
-  timestamp: string;
-  level: 'info' | 'warn' | 'error';
-  message: string;
-  details?: any;
-  error?: string;
-  result?: any;
-  jobId?: string;
-}
-
-export interface IScrapeJob {
-  id: number;
-  source_website: string;
-  status: string;
-  properties_found: number;
-  properties_new: number;
-  properties_updated: number;
-  started_at: string;
-  completed_at?: string;
-  error_message?: string;
-  logs: (string | ILogEntry)[];
-}
-
-export interface IScraperStatus {
-  source_website: string;
-  status: string;
-  last_run?: string;
-  properties_found?: number;
-  properties_new?: number;
-  properties_updated?: number;
-}
-
-export interface ScraperConfig {
-  location: {
-    city: string;
-    province: string;
-    country: string;
-    p24_id?: string;
-  };
-  maxPages: number;
-  priceRange: {
-    min?: number;
-    max?: number;
-  };
-  propertyTypes: string[];
-}
-
-export interface IPriceHistoryEntry {
-  id: number;
-  property_id: number;
-  price: number;
-  price_currency: string;
-  recorded_at: string;
-  change_type: 'initial' | 'increase' | 'decrease' | 'update';
-  previous_price?: number;
-  change_amount?: number;
-  change_percentage?: number;
-}
-
-export interface ILifecycleEvent {
-  id: number;
-  property_id: number;
-  event_type: 'listed' | 'delisted' | 'relisted' | 'price_changed';
-  event_date: string;
-  days_on_market?: number;
-  metadata?: string;
-}
-
-export interface IPriceHistoryResponse {
-  price_history: IPriceHistoryEntry[];
-  lifecycle_events: ILifecycleEvent[];
-}
-
-export interface IAggregatedPriceHistory {
-  date: string;
-  avg_price: number;
-  min_price: number;
-  max_price: number;
-  property_count: number;
-  price_changes: number;
-}
-
-export interface IMarketTrend {
-  date: string;
-  price_increases: number;
-  price_decreases: number;
-  avg_increase_pct: number;
-  avg_decrease_pct: number;
-  total_changes: number;
-}
-
-export interface IPriceDistribution {
-  price_range: string;
-  count: number;
-  avg_price: number;
-}
-
-export interface IPriceHistoryData {
-  aggregated_history: IAggregatedPriceHistory[];
-  market_trends: IMarketTrend[];
-  price_distribution: IPriceDistribution[];
-}
-
-export interface ITimeOnMarketProperty {
-  id: number;
-  title: string;
-  location_city: string;
-  location_suburb: string;
-  price: number;
-  listing_date: string;
-  scraped_at: string;
-  days_on_market: number;
-  first_listed_date?: string;
-  last_event_date?: string;
-}
-
-export interface ITimeOnMarketResponse {
-  properties: ITimeOnMarketProperty[];
-  summary: {
-    total_properties: number;
-    avg_days_on_market: number;
-    max_days_on_market: number;
-    min_days_on_market: number;
-    time_ranges: Record<string, number>;
-  };
-}
-
 // API functions
 export const propertiesApi = {
   // Get properties with filters
@@ -237,7 +45,7 @@ export const propertiesApi = {
   },
 
   // Get single property
-  getProperty: async (id: number): Promise<Property> => {
+  getProperty: async (id: number): Promise<IProperty> => {
     const response = await api.get(`/api/properties/${id}`);
     return response.data;
   },
@@ -279,10 +87,103 @@ export const propertiesApi = {
   },
 };
 
+// RENTAL PROPERTIES API
+export const rentalPropertiesApi = {
+  // Get rental properties with filters
+  getRentalProperties: async (
+    filters: IRentalPropertyFilters = {}
+  ): Promise<IRentalPropertiesResponse> => {
+    const response = await api.get("/api/rental-properties", { params: filters });
+    return response.data;
+  },
+
+  // Get single rental property
+  getRentalProperty: async (id: number): Promise<IRentalProperty> => {
+    const response = await api.get(`/api/rental-properties/${id}`);
+    return response.data;
+  },
+
+  // Get rental market statistics
+  getRentalMarketStats: async (): Promise<IRentalMarketStats> => {
+    const response = await api.get("/api/rental-market-stats");
+    return response.data;
+  },
+};
+
+// INVESTOR ANALYSIS API
+export const investorApi = {
+  // Calculate rental yield for a sale property
+  calculateRentalYield: async (salePropertyId: number): Promise<IRentalYieldAnalysis> => {
+    const response = await api.post(`/api/investor/rental-yield/${salePropertyId}`);
+    return response.data;
+  },
+
+  // Get rental yield analysis for a property
+  getRentalYieldAnalysis: async (salePropertyId: number): Promise<IRentalYieldAnalysis> => {
+    const response = await api.get(`/api/investor/rental-yield/${salePropertyId}`);
+    return response.data;
+  },
+
+  // Get market analysis for a location
+  getMarketAnalysis: async (location: {
+    province: string;
+    city: string;
+    suburb?: string;
+  }, propertyType?: string): Promise<IMarketAnalysis> => {
+    const response = await api.get("/api/investor/market-analysis", {
+      params: { ...location, property_type: propertyType }
+    });
+    return response.data;
+  },
+
+  // Calculate fresh market analysis
+  calculateMarketAnalysis: async (location: {
+    province: string;
+    city: string;
+    suburb?: string;
+  }, propertyType?: string): Promise<IMarketAnalysis> => {
+    const response = await api.post("/api/investor/market-analysis", {
+      location,
+      property_type: propertyType
+    });
+    return response.data;
+  },
+
+  // Get investment opportunities
+  getInvestmentOpportunities: async (filters: {
+    min_yield?: number;
+    location_city?: string;
+    max_price?: number;
+    limit?: number;
+  } = {}): Promise<IInvestmentOpportunity[]> => {
+    const response = await api.get("/api/investor/opportunities", { params: filters });
+    return response.data;
+  },
+
+  // Get or create property expenses
+  getPropertyExpenses: async (propertyId: number, propertyTable: 'properties' | 'rental_properties'): Promise<IPropertyExpenses> => {
+    const response = await api.get(`/api/investor/expenses/${propertyTable}/${propertyId}`);
+    return response.data;
+  },
+
+  // Update property expenses
+  updatePropertyExpenses: async (expenses: Partial<IPropertyExpenses>): Promise<IPropertyExpenses> => {
+    const response = await api.post("/api/investor/expenses", expenses);
+    return response.data;
+  },
+};
+
 export const scraperApi = {
-  // Run scraper for specific source
-  runScraper: async (source: string, config?: ScraperConfig): Promise<any> => {
+  // Run scraper for specific source (with optional rental/sale type)
+  runScraper: async (source: string, config?: IScraperConfig & { listingType?: 'sale' | 'rental' }): Promise<any> => {
     const response = await api.post(`/api/scraper/scrape/${source}`, config);
+    return response.data;
+  },
+
+  // Run rental scraper specifically
+  runRentalScraper: async (source: string, config?: IScraperConfig): Promise<any> => {
+    console.log("🚀 ~ runRentalScraper: ~ source:", source)
+    const response = await api.post(`/api/scraper/scrape-rentals/${source}`, config);
     return response.data;
   },
 
@@ -304,5 +205,66 @@ export const scraperApi = {
     return response.data;
   },
 };
+
+// USER MANAGEMENT API (Admin only)
+export const userApi = {
+  // Get all users
+  getAllUsers: async (page = 1, limit = 20): Promise<{
+    users: User[];
+    pagination: {
+      page: number;
+      limit: number;
+      hasMore: boolean;
+    };
+  }> => {
+    const response = await api.get('/api/users/admin/users', {
+      params: { page, limit }
+    });
+    return response.data;
+  },
+
+  // Update user role
+  updateUserRole: async (userId: number, role: 'admin' | 'user' | 'viewer'): Promise<void> => {
+    await api.put(`/api/users/admin/users/${userId}/role`, { role });
+  },
+
+  // Deactivate user
+  deactivateUser: async (userId: number): Promise<void> => {
+    await api.put(`/api/users/admin/users/${userId}/deactivate`);
+  },
+
+  // Create new user (manual registration by admin)
+  createUser: async (userData: {
+    email: string;
+    password: string;
+    firstName: string;
+    lastName: string;
+    role?: 'admin' | 'user' | 'viewer';
+  }): Promise<User> => {
+    const response = await api.post('/api/users/auth/register', userData);
+    return response.data.user;
+  },
+
+  // Update user's own password
+  updatePassword: async (currentPassword: string, newPassword: string): Promise<void> => {
+    await api.put('/api/users/profile/password', {
+      currentPassword,
+      newPassword
+    });
+  },
+};
+
+// User interface for management
+export interface User {
+  id: number;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: 'admin' | 'user' | 'viewer';
+  isActive: boolean;
+  lastLogin?: string | null;
+  createdAt: string;
+  updatedAt?: string;
+}
 
 export default api;
