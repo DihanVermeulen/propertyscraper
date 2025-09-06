@@ -32,7 +32,6 @@
   --accent: oklch(0.967 0.001 286.375);
   --accent-foreground: oklch(0.21 0.006 285.885);
   --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.985 0 0);
   --border: oklch(0.92 0.004 286.32);
   --input: oklch(0.92 0.004 286.32);
   --ring: oklch(0.795 0.184 86.047);
@@ -67,7 +66,6 @@
   --accent: oklch(0.274 0.006 286.033);
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.985 0 0);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.554 0.135 66.442);
@@ -172,49 +170,49 @@
 }
 
 .btn-primary {
-  background: linear-gradient(to right, #2563eb, #7c3aed);
+  background: linear-gradient(to right, var(--primary), var(--secondary));
   color: white;
 }
 
 .btn-primary:hover {
-  background: linear-gradient(to right, #1d4ed8, #6d28d9);
+  background: linear-gradient(to right, var(--primary), var(--secondary));
 }
 
 .btn-secondary {
   background-color: white;
-  color: #374151;
-  border: 1px solid #d1d5db;
+  color: var(--secondary);
+  border: 1px solid var(--secondary);
 }
 
 .btn-secondary:hover {
-  background-color: #f9fafb;
+  background-color: var(--secondary);
 }
 
 .btn-success {
-  background: linear-gradient(to right, #10b981, #059669);
+  background: linear-gradient(to right, var(--success), var(--secondary));
   color: white;
 }
 
 .btn-success:hover {
-  background: linear-gradient(to right, #059669, #047857);
+  background: linear-gradient(to right, var(--success), var(--secondary));
 }
 
 .btn-warning {
-  background: linear-gradient(to right, #f59e0b, #ea580c);
+  background: linear-gradient(to right, var(--warning), var(--secondary));
   color: white;
 }
 
 .btn-warning:hover {
-  background: linear-gradient(to right, #d97706, #dc2626);
+  background: linear-gradient(to right, var(--warning), var(--secondary));
 }
 
 .btn-error {
-  background: linear-gradient(to right, #ef4444, #ec4899);
+  background: var(--error);
   color: white;
 }
 
 .btn-error:hover {
-  background: linear-gradient(to right, #dc2626, #db2777);
+  background: var(--error);
 }
 
 /* Modern Card Styles */
@@ -222,7 +220,7 @@
   background-color: white;
   border-radius: 1rem;
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-  border: 1px solid #f3f4f6;
+  border: 1px solid var(--border);
   padding: 1.5rem;
   transition: all 0.2s;
 }
@@ -251,7 +249,7 @@
   display: block;
   width: 100%;
   border-radius: 0.75rem;
-  border: 2px solid #e5e7eb;
+  border: 2px solid var(--border);
   padding: 0.75rem 1rem;
   font-size: 0.875rem;
   transition: all 0.2s;
@@ -299,7 +297,7 @@
   border-radius: 1rem;
   padding: 1.5rem;
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-  border: 1px solid #f3f4f6;
+  border: 1px solid var(--border);
   transition: all 0.2s;
 }
 
@@ -313,7 +311,7 @@
   background-color: white;
   border-radius: 1rem;
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-  border: 1px solid #f3f4f6;
+  border: 1px solid var(--border);
   overflow: hidden;
   transition: all 0.2s;
 }
@@ -334,27 +332,27 @@
 }
 
 .badge-primary {
-  background-color: #dbeafe;
-  color: #1e40af;
-  border: 1px solid #bfdbfe;
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+  border: 1px solid var(--primary);
 }
 
 .badge-success {
-  background-color: #d1fae5;
-  color: #065f46;
-  border: 1px solid #a7f3d0;
+  background-color: var(--success);
+  color: var(--success-foreground);
+  border: 1px solid var(--success);
 }
 
 .badge-warning {
-  background-color: #fef3c7;
-  color: #92400e;
-  border: 1px solid #fde68a;
+  background-color: var(--warning);
+  color: var(--warning-foreground);
+  border: 1px solid var(--warning);
 }
 
 .badge-error {
-  background-color: #fee2e2;
-  color: #991b1b;
-  border: 1px solid #fecaca;
+  background-color: var(--error);
+  color: var(--error-foreground);
+  border: 1px solid var(--error);
 }
 
 /* Loading Animation */
@@ -363,8 +361,8 @@
   border-radius: 50%;
   height: 1.5rem;
   width: 1.5rem;
-  border: 2px solid #d1d5db;
-  border-top-color: #2563eb;
+  border: 2px solid var(--border);
+  border-top-color: var(--primary);
 }
 
 @keyframes spin {
@@ -376,7 +374,7 @@
 /* Sidebar Styles */
 .sidebar {
   background: linear-gradient(to bottom, white, #f9fafb);
-  border-right: 1px solid #e5e7eb;
+  border-right: 1px solid var(--border);
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
 }
 
@@ -384,7 +382,7 @@
 .header {
   background-color: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(12px);
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border);
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
 
