@@ -3,6 +3,7 @@
 import { cn } from "../../lib/utils";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAuth } from "../../contexts/AuthContext";
 import { 
   Sidebar, 
   SidebarContent, 
@@ -24,41 +25,74 @@ import {
   CogIcon,
   UserIcon,
   PlayIcon,
+  ChartBarSquareIcon,
 } from "@heroicons/react/24/outline";
 
-const navigation = [
-  { name: "Dashboard", href: "/", icon: HomeIcon },
-  {
-    name: "Listings",
-    href: "/listings",
-    icon: BuildingOfficeIcon,
-    children: [
-      { name: "All Properties", href: "/listings" },
-      { name: "By Location", href: "/listings/locations" },
-      { name: "Price History", href: "/listings/prices" },
-      { name: "Time on Market", href: "/listings/time-on-market" },
-    ],
-  },
-  { name: "Search & Filters", href: "/search", icon: MagnifyingGlassIcon },
-  { name: "Trends & Analytics", href: "/analytics", icon: ArrowTrendingUpIcon },
-  { name: "Scraper Controls", href: "/scraper", icon: PlayIcon },
-  { name: "Admin Settings", href: "/admin", icon: CogIcon },
-  { name: "Profile", href: "/profile", icon: UserIcon },
-];
+// Navigation items that depend on user role
+const getNavigation = (userRole?: string) => {
+  const baseNavigation = [
+    { name: "Dashboard", href: "/", icon: HomeIcon, visible: true },
+    {
+      name: "Listings",
+      href: "/listings",
+      icon: BuildingOfficeIcon,
+      visible: true,
+      children: [
+        { name: "All Properties", href: "/listings", visible: true },
+        { name: "By Location", href: "/listings/locations", visible: true },
+        { name: "Price History", href: "/listings/prices", visible: process.env.NEXT_PUBLIC_FEATURE_PRICE_History_ENABLED === 'true' || false },
+        { name: "Time on Market", href: "/listings/time-on-market", visible: process.env.NEXT_PUBLIC_FEATURE_TIME_ON_MARKET_ENABLED === 'true' || false },
+      ],
+    },
+    {
+      name: "Investor Dashboard",
+      href: "/investor",
+      icon: ChartBarSquareIcon,
+      visible: process.env.NEXT_PUBLIC_FEATURE_INVESTOR_DASHBOARD_ENABLED === 'true' || false,
+      children: [
+        { name: "Overview", href: "/investor", visible: true },
+        { name: "Yield Calculator", href: "/investor/calculator", visible: true },
+        { name: "Market Analysis", href: "/investor/market", visible: true },
+        { name: "Opportunities", href: "/investor/opportunities", visible: true },
+      ],
+    },
+    { name: "Trends & Analytics", href: "/analytics", icon: ArrowTrendingUpIcon, visible: process.env.NEXT_PUBLIC_FEATURE_TRENDS_ANALYTICS_ENABLED === 'true' || false },
+  ];
+
+  // Add admin-specific navigation
+  if (userRole === 'admin') {
+    baseNavigation.push(
+      { name: "Scraper Controls", href: "/scraper", icon: PlayIcon, visible: true },
+      {
+        name: "Admin Settings",
+        href: "/admin/users",
+        icon: CogIcon,
+        visible: true,
+        children: [
+          { name: "User Management", href: "/admin/users", visible: true },
+        ],
+      }
+    );
+  }
+
+  return baseNavigation;
+};
 
 export function AppSidebar() {
-  const pathname = usePathname()
+  const pathname = usePathname();
+  const { user } = useAuth();
+  const navigation = getNavigation(user?.role);
+  console.log(process.env.NEXT_PUBLIC_FEATURE_INVESTOR_DASHBOARD_ENABLED)
+  console.log("🚀 ~ AppSidebar ~ navigation:", navigation)
 
   return (
     <Sidebar>
       <SidebarHeader>
         <div className="flex items-center gap-2 p-2">
-          <BuildingOfficeIcon className="h-8 w-8 text-primary" />
           <div className="flex flex-col">
             <h1 className="text-lg font-bold text-sidebar-foreground">
-              Property Scraper
+              KSP Property Scraper
             </h1>
-            <p className="text-sm text-sidebar-foreground/70">Dashboard</p>
           </div>
         </div>
       </SidebarHeader>
@@ -71,7 +105,7 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {navigation.map((item) => (
-                <SidebarMenuItem key={item.name}>
+                <SidebarMenuItem key={item.name} hidden={!item.visible}>
                   <SidebarMenuButton asChild isActive={pathname === item.href}>
                     <Link href={item.href}>
                       <item.icon className="h-4 w-4" />
@@ -86,6 +120,7 @@ export function AppSidebar() {
                           asChild
                           size="sm"
                           isActive={pathname === child.href}
+                          hidden={!child.visible}
                         >
                           <Link href={child.href}>
                             <span className="text-xs">{child.name}</span>
@@ -108,9 +143,11 @@ export function AppSidebar() {
           </div>
           <div className="flex flex-col flex-1">
             <p className="text-sm font-medium text-sidebar-foreground">
-              Admin User
+              {user ? `${user.firstName} ${user.lastName}` : 'Loading...'}
             </p>
-            <p className="text-xs text-sidebar-foreground/70">View profile</p>
+            <p className="text-xs text-sidebar-foreground/70 capitalize">
+              {user?.role || 'User'}
+            </p>
           </div>
         </div>
       </SidebarFooter>
