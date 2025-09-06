@@ -2,55 +2,78 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { propertiesApi, IPropertyFilters } from '../../lib/api';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
+import { propertiesApi, rentalPropertiesApi, IPropertyFilters, IRentalPropertyFilters } from '../../lib/api';
 import PropertyCard from '../../components/listings/PropertyCard';
+import RentalPropertyCard from '../../components/listings/RentalPropertyCard';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import Pagination from '../../components/ui/Pagination';
 import PropertyFilters from '../../components/listings/PropertyFilters';
+import RentalPropertyFilters from '../../components/listings/RentalPropertyFilters';
+import { Home, Building } from 'lucide-react';
 
 export default function ListingsPage() {
-  const [filters, setFilters] = useState<IPropertyFilters>({
+  const [saleFilters, setSaleFilters] = useState<IPropertyFilters>({
     limit: 12,
     offset: 0,
   });
 
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['properties', filters],
-    queryFn: () => propertiesApi.getProperties(filters),
+  const [rentalFilters, setRentalFilters] = useState<IRentalPropertyFilters>({
+    limit: 12,
+    offset: 0,
+  });
+
+  // Sale Properties Query
+  const { data: saleData, isLoading: saleLoading, error: saleError } = useQuery({
+    queryKey: ['properties-for-sale', saleFilters],
+    queryFn: () => propertiesApi.getProperties(saleFilters),
     staleTime: 60 * 60 * 1000, // 1 hour
   });
 
-  const handleFilterChange = (newFilters: Partial<IPropertyFilters>) => {
-    setFilters(prev => ({
+  // Rental Properties Query
+  const { data: rentalData, isLoading: rentalLoading, error: rentalError } = useQuery({
+    queryKey: ['rental-properties', rentalFilters],
+    queryFn: () => rentalPropertiesApi.getRentalProperties(rentalFilters),
+    staleTime: 60 * 60 * 1000, // 1 hour
+  });
+
+  const handleSaleFilterChange = (newFilters: Partial<IPropertyFilters>) => {
+    setSaleFilters(prev => ({
       ...prev,
       ...newFilters,
       offset: 0, // Reset to first page when filters change
     }));
   };
 
-  const handlePageChange = (page: number) => {
-    const limit = filters.limit || 12;
-    setFilters(prev => ({
+  const handleRentalFilterChange = (newFilters: Partial<IRentalPropertyFilters>) => {
+    setRentalFilters(prev => ({
+      ...prev,
+      ...newFilters,
+      offset: 0, // Reset to first page when filters change
+    }));
+  };
+
+  const handleSalePageChange = (page: number) => {
+    const limit = saleFilters.limit || 12;
+    setSaleFilters(prev => ({
       ...prev,
       offset: (page - 1) * limit,
     }));
   };
 
-  if (error) {
-    return (
-      <div className="text-center py-12">
-        <div className="text-error-500 text-lg font-medium">
-          Error loading properties
-        </div>
-        <p className="text-secondary-600 mt-2">
-          Please try refreshing the page or check your connection.
-        </p>
-      </div>
-    );
-  }
+  const handleRentalPageChange = (page: number) => {
+    const limit = rentalFilters.limit || 12;
+    setRentalFilters(prev => ({
+      ...prev,
+      offset: (page - 1) * limit,
+    }));
+  };
 
-  const currentPage = Math.floor((filters.offset || 0) / (filters.limit || 12)) + 1;
-  const totalPages = Math.ceil((data?.total || 0) / (filters.limit || 12));
+  const saleCurrentPage = Math.floor((saleFilters.offset || 0) / (saleFilters.limit || 12)) + 1;
+  const saleTotalPages = Math.ceil((saleData?.total || 0) / (saleFilters.limit || 12));
+  
+  const rentalCurrentPage = Math.floor((rentalFilters.offset || 0) / (rentalFilters.limit || 12)) + 1;
+  const rentalTotalPages = Math.ceil((rentalData?.total || 0) / (rentalFilters.limit || 12));
 
   return (
     <div className="space-y-6">
@@ -61,54 +84,150 @@ export default function ListingsPage() {
             All Properties
           </h1>
           <p className="mt-1 text-sm text-secondary-500">
-            {data?.total ? `${data.total.toLocaleString()} properties found` : 'Browse all scraped properties'}
+            Browse properties for sale and rent
           </p>
         </div>
       </div>
 
-      {/* Filters */}
-      <PropertyFilters filters={filters} onFilterChange={handleFilterChange} />
+      {/* Property Type Tabs */}
+      <Tabs defaultValue="for-sale" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2 max-w-md">
+          <TabsTrigger value="for-sale" className="flex items-center gap-2">
+            <Home className="h-4 w-4" />
+            For Sale
+            {saleData?.total && (
+              <span className="bg-primary/10 text-primary text-xs px-2 rounded-full">
+                {saleData.total.toLocaleString()}
+              </span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="rentals" className="flex items-center gap-2">
+            <Building className="h-4 w-4" />
+            Rentals
+            {rentalData?.total && (
+              <span className="bg-primary/10 text-primary text-xs px-2 rounded-full">
+                {rentalData.total.toLocaleString()}
+              </span>
+            )}
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Loading State */}
-      {isLoading && (
-        <div className="flex items-center justify-center py-12">
-          <LoadingSpinner size="lg" />
-        </div>
-      )}
+        {/* For Sale Properties Tab */}
+        <TabsContent value="for-sale" className="space-y-6">
+          <PropertyFilters filters={saleFilters} onFilterChange={handleSaleFilterChange} />
 
-      {/* Properties Grid */}
-      {!isLoading && data?.properties && (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {data.properties.map((property) => (
-              <PropertyCard key={property.id} property={property} />
-            ))}
-          </div>
+          {/* Loading State */}
+          {saleLoading && (
+            <div className="flex items-center justify-center py-12">
+              <LoadingSpinner size="lg" />
+            </div>
+          )}
 
-          {/* Empty State */}
-          {data.properties.length === 0 && (
+          {/* Error State */}
+          {saleError && (
             <div className="text-center py-12">
-              <div className="text-secondary-500 text-lg font-medium">
-                No properties found
+              <div className="text-error-500 text-lg font-medium">
+                Error loading properties for sale
               </div>
-              <p className="text-secondary-400 mt-2">
-                Try adjusting your filters or check back later for new listings.
+              <p className="text-secondary-600 mt-2">
+                Please try refreshing the page or check your connection.
               </p>
             </div>
           )}
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex justify-center">
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={handlePageChange}
-              />
+          {/* Properties Grid */}
+          {!saleLoading && saleData?.properties && (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {saleData.properties.map((property) => (
+                  <PropertyCard key={property.id} property={property} />
+                ))}
+              </div>
+
+              {/* Empty State */}
+              {saleData.properties.length === 0 && (
+                <div className="text-center py-12">
+                  <div className="text-secondary-500 text-lg font-medium">
+                    No properties for sale found
+                  </div>
+                  <p className="text-secondary-400 mt-2">
+                    Try adjusting your filters or check back later for new listings.
+                  </p>
+                </div>
+              )}
+
+              {/* Pagination */}
+              {saleTotalPages > 1 && (
+                <div className="flex justify-center">
+                  <Pagination
+                    currentPage={saleCurrentPage}
+                    totalPages={saleTotalPages}
+                    onPageChange={handleSalePageChange}
+                  />
+                </div>
+              )}
+            </>
+          )}
+        </TabsContent>
+
+        {/* Rental Properties Tab */}
+        <TabsContent value="rentals" className="space-y-6">
+          <RentalPropertyFilters filters={rentalFilters} onFilterChange={handleRentalFilterChange} />
+
+          {/* Loading State */}
+          {rentalLoading && (
+            <div className="flex items-center justify-center py-12">
+              <LoadingSpinner size="lg" />
             </div>
           )}
-        </>
-      )}
+
+          {/* Error State */}
+          {rentalError && (
+            <div className="text-center py-12">
+              <div className="text-error-500 text-lg font-medium">
+                Error loading rental properties
+              </div>
+              <p className="text-secondary-600 mt-2">
+                Please try refreshing the page or check your connection.
+              </p>
+            </div>
+          )}
+
+          {/* Rental Properties Grid */}
+          {!rentalLoading && rentalData?.rental_properties && (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {rentalData.rental_properties.map((property) => (
+                  <RentalPropertyCard key={property.id} property={property} />
+                ))}
+              </div>
+
+              {/* Empty State */}
+              {rentalData.rental_properties.length === 0 && (
+                <div className="text-center py-12">
+                  <div className="text-secondary-500 text-lg font-medium">
+                    No rental properties found
+                  </div>
+                  <p className="text-secondary-400 mt-2">
+                    Try adjusting your filters or check back later for new listings.
+                  </p>
+                </div>
+              )}
+
+              {/* Pagination */}
+              {rentalTotalPages > 1 && (
+                <div className="flex justify-center">
+                  <Pagination
+                    currentPage={rentalCurrentPage}
+                    totalPages={rentalTotalPages}
+                    onPageChange={handleRentalPageChange}
+                  />
+                </div>
+              )}
+            </>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

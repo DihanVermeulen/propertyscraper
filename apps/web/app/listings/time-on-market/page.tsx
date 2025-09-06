@@ -4,8 +4,10 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { propertiesApi } from '../../../lib/api';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
-import { ClockIcon, HomeIcon, MapPinIcon, CurrencyDollarIcon } from '@heroicons/react/24/outline';
+import { HomeIcon, MapPinIcon, CurrencyDollarIcon } from '@heroicons/react/24/outline';
 import { formatDistanceToNow, parseISO } from 'date-fns';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '../../../components/ui/select';
+import { Input } from '../../../components/ui/input';
 
 export default function TimeOnMarketPage() {
   const [selectedLocation, setSelectedLocation] = useState('all');
@@ -108,46 +110,60 @@ export default function TimeOnMarketPage() {
             <label className="block text-sm font-medium text-secondary-700 mb-2">
               Location
             </label>
-            <select
+            <Select
               value={selectedLocation}
-              onChange={(e) => setSelectedLocation(e.target.value)}
-              className="input w-full"
+              onValueChange={(value) => setSelectedLocation(value)}
             >
-              <option value="all">All Locations</option>
-              {stats?.top_locations?.map((location) => (
-                <option key={location.location_city} value={location.location_city}>
-                  {location.location_city}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select Location" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectLabel>Locations</SelectLabel>
+                  <SelectItem value="all">All Locations</SelectItem>
+                  {stats?.top_locations?.map((location) => (
+                    <SelectItem key={location.location_city} value={location.location_city}>
+                      {location.location_city}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-secondary-700 mb-2">
               Time Range
             </label>
-            <select
+            <Select
               value={selectedTimeRange}
-              onChange={(e) => applyTimeRangeFilter(e.target.value)}
-              className="input w-full"
+              onValueChange={(value) => applyTimeRangeFilter(value)}
             >
-              <option value="all">All Properties</option>
-              <option value="fresh">Fresh (Under 30 days)</option>
-              <option value="active">Active (30-89 days)</option>
-              <option value="stale">Stale (90-179 days)</option>
-              <option value="very-stale">Very Stale (180+ days)</option>
-            </select>
+              <SelectTrigger className='w-full'>
+                <SelectValue placeholder="Select Time Range" />
+              </SelectTrigger>
+              <SelectContent>
+                  <SelectGroup>
+                    <SelectLabel>Time Range</SelectLabel>
+                    <SelectItem value="all">All Properties</SelectItem>
+                    <SelectItem value="fresh">Fresh (Under 30 days)</SelectItem>
+                    <SelectItem value="active">Active (30-89 days)</SelectItem>
+                    <SelectItem value="stale">Stale (90-179 days)</SelectItem>
+                    <SelectItem value="very-stale">Very Stale (180+ days)</SelectItem>
+                  </SelectGroup>
+              </SelectContent>
+            </Select>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-secondary-700 mb-2">
               Min Days
             </label>
-            <input
+            <Input
               type="number"
               value={minDays}
               onChange={(e) => setMinDays(e.target.value)}
-              className="input w-full"
+              className="w-full"
               placeholder="0"
             />
           </div>
@@ -156,11 +172,11 @@ export default function TimeOnMarketPage() {
             <label className="block text-sm font-medium text-secondary-700 mb-2">
               Max Days
             </label>
-            <input
+            <Input
               type="number"
               value={maxDays}
               onChange={(e) => setMaxDays(e.target.value)}
-              className="input w-full"
+              className="w-full"
               placeholder="No limit"
             />
           </div>
@@ -168,7 +184,7 @@ export default function TimeOnMarketPage() {
       </div>
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      {/* <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="card">
           <div className="flex items-center">
             <div className="flex-shrink-0">
@@ -248,7 +264,7 @@ export default function TimeOnMarketPage() {
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Properties List */}
       <div className="card">
