@@ -1,98 +1,134 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { scraperApi, ScraperConfig } from '../../lib/api';
-import ScraperStatus from '../../components/scraper/ScraperStatus';
-import ScraperJobs from '../../components/scraper/ScraperJobs';
-import LoadingSpinner from '../../components/ui/LoadingSpinner';
-import { PlayIcon } from '@heroicons/react/24/outline';
-import { southAfricanLocations, provinces } from '../../lib/locations';
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { scraperApi, ScraperConfig } from "../../lib/api";
+import ScraperStatus from "../../components/scraper/ScraperStatus";
+import ScraperJobs from "../../components/scraper/ScraperJobs";
+import LoadingSpinner from "../../components/ui/LoadingSpinner";
+import { PlayIcon } from "@heroicons/react/24/outline";
+import { southAfricanLocations, provinces } from "../../lib/locations";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
+import { Input } from "../../components/ui/input";
+import { Button } from "../../components/ui/button";
 
 // ScraperConfig is now imported from api.ts
 
 export default function ScraperPage() {
   const [isRunning, setIsRunning] = useState(false);
+  const [listingType, setListingType] = useState<'sale' | 'rental'>('sale');
   const [scraperConfig, setScraperConfig] = useState<ScraperConfig>({
     location: {
-      city: 'Somerset West',
-      province: 'Western Cape',
-      country: 'South Africa',
-      p24_id: '390' // Default to Somerset West
+      city: "Somerset West",
+      province: "Western Cape",
+      country: "South Africa",
+      p24_id: "390", // Default to Somerset West
     },
     maxPages: 20,
     priceRange: {},
-    propertyTypes: []
+    propertyTypes: [],
   });
   const queryClient = useQueryClient();
 
   const { data: scraperStatus, isLoading: statusLoading } = useQuery({
-    queryKey: ['scraper-status'],
+    queryKey: ["scraper-status"],
     queryFn: scraperApi.getScraperStatus,
     refetchInterval: 10000, // Refetch every 10 seconds
   });
 
   const { data: scrapeJobs, isLoading: jobsLoading } = useQuery({
-    queryKey: ['scrape-jobs'],
+    queryKey: ["scrape-jobs"],
     queryFn: () => scraperApi.getScrapeJobs(50),
     refetchInterval: 5000, // Refetch every 5 seconds
   });
 
   const runScraperMutation = useMutation({
-    mutationFn: ({ source, config }: { source: string; config: ScraperConfig }) => scraperApi.runScraper(source, config),
+    mutationFn: ({
+      source,
+      config,
+    }: {
+      source: string;
+      config: ScraperConfig;
+    }) => scraperApi.runScraper(source, config),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['scraper-status'] });
-      queryClient.invalidateQueries({ queryKey: ['scrape-jobs'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      queryClient.invalidateQueries({ queryKey: ["scraper-status"] });
+      queryClient.invalidateQueries({ queryKey: ["scrape-jobs"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
+    },
+  });
+
+  const runRentalScraperMutation = useMutation({
+    mutationFn: ({
+      source,
+      config,
+    }: {
+      source: string;
+      config: ScraperConfig;
+    }) => scraperApi.runRentalScraper(source, config),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["scraper-status"] });
+      queryClient.invalidateQueries({ queryKey: ["scrape-jobs"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
     },
   });
 
   const runAllScrapersMutation = useMutation({
-    mutationFn: scraperApi.runAllScrapers,
+    mutationFn: (config?: { includeRentals?: boolean }) => scraperApi.runAllScrapers(),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['scraper-status'] });
-      queryClient.invalidateQueries({ queryKey: ['scrape-jobs'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      queryClient.invalidateQueries({ queryKey: ["scraper-status"] });
+      queryClient.invalidateQueries({ queryKey: ["scrape-jobs"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
     },
   });
 
   const handleRunScraper = async (source: string) => {
-    console.log('handleRunScraper called with source:', source);
-    
+    console.log("handleRunScraper called with source:", source, "type:", listingType);
+
     // Prevent duplicate calls
-    if (isRunning || runScraperMutation.isPending) {
-      console.log('Scraper already running, ignoring duplicate call');
+    if (isRunning || runScraperMutation.isPending || runRentalScraperMutation.isPending) {
+      console.log("Scraper already running, ignoring duplicate call");
       return;
     }
-    
+
     setIsRunning(true);
     try {
-      console.log('Starting scraper mutation for:', source, 'with config:', scraperConfig);
-      await runScraperMutation.mutateAsync({ source, config: scraperConfig });
-      console.log('Scraper mutation completed for:', source);
+      console.log(
+        "Starting", listingType, "scraper mutation for:",
+        source,
+        "with config:",
+        scraperConfig
+      );
+      
+      if (listingType === 'rental') {
+        await runRentalScraperMutation.mutateAsync({ source, config: scraperConfig });
+        console.log("Rental scraper mutation completed for:", source);
+      } else {
+        await runScraperMutation.mutateAsync({ source, config: scraperConfig });
+        console.log("Sale scraper mutation completed for:", source);
+      }
     } catch (error) {
-      console.error('Error running scraper:', error);
+      console.error("Error running scraper:", error);
     } finally {
       setIsRunning(false);
     }
   };
 
   const handleRunAllScrapers = async () => {
-    console.log('handleRunAllScrapers called');
-    
+    console.log("handleRunAllScrapers called");
+
     // Prevent duplicate calls
     if (isRunning || runAllScrapersMutation.isPending) {
-      console.log('All scrapers already running, ignoring duplicate call');
+      console.log("All scrapers already running, ignoring duplicate call");
       return;
     }
-    
+
     setIsRunning(true);
     try {
-      console.log('Starting all scrapers mutation');
-      await runAllScrapersMutation.mutateAsync();
-      console.log('All scrapers mutation completed');
+      console.log("Starting all scrapers mutation");
+      await runAllScrapersMutation.mutateAsync({ includeRentals: true });
+      console.log("All scrapers mutation completed");
     } catch (error) {
-      console.error('Error running all scrapers:', error);
+      console.error("Error running all scrapers:", error);
     } finally {
       setIsRunning(false);
     }
@@ -111,109 +147,175 @@ export default function ScraperPage() {
           </p>
         </div>
         <div className="mt-4 flex space-x-3 md:mt-0 md:ml-4">
-          <button
+          <Button
             onClick={handleRunAllScrapers}
             disabled={isRunning || runAllScrapersMutation.isPending}
-            className="btn btn-primary flex items-center space-x-2"
+            variant="default"
+            className="flex items-center space-x-2 h-10"
           >
-            {(isRunning || runAllScrapersMutation.isPending) ? (
+            {isRunning || runAllScrapersMutation.isPending ? (
               <>
                 <LoadingSpinner size="sm" />
                 <span>Running...</span>
               </>
             ) : (
               <>
-                <PlayIcon className="h-4 w-4" />
-                <span>Run All Scrapers</span>
+                <PlayIcon className="h-4 w-4 font-bold" />
+                <span className="font-bold">Run All {listingType === 'rental' ? 'Rental' : 'Sale'} Scrapers</span>
               </>
             )}
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* Scraper Config */}
       <div className="card">
-        <h3 className="text-lg font-semibold text-secondary-900 mb-6">Scraper Configuration</h3>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <h3 className="text-lg font-semibold text-secondary-900 mb-6">
+          Scraper Configuration
+        </h3>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* Listing Type */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-secondary-700">
+              Listing Type
+            </label>
+            <Select
+              value={listingType}
+              onValueChange={(value: 'sale' | 'rental') => setListingType(value)}
+            >
+              <SelectTrigger className="text-sm w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="sale">For Sale</SelectItem>
+                <SelectItem value="rental">To Rent</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           {/* Province */}
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-secondary-700">Province</label>
-            <select
+            <label className="block text-sm font-medium text-secondary-700">
+              Province
+            </label>
+            <Select
               value={scraperConfig.location.province}
-              onChange={(e) => {
-                const newProvince = e.target.value;
-                const provinceData = southAfricanLocations[newProvince as keyof typeof southAfricanLocations] || {};
+              onValueChange={(value) => {
+                const newProvince = value;
+                const provinceData =
+                  southAfricanLocations[
+                    newProvince as keyof typeof southAfricanLocations
+                  ] || {};
                 const availableCities = Object.keys(provinceData);
-                const firstCity = availableCities[0] || '';
+                const firstCity = availableCities[0] || "";
                 const firstCityData = provinceData[firstCity];
-                setScraperConfig(prev => ({ 
-                  ...prev, 
-                  location: { 
+                setScraperConfig((prev) => ({
+                  ...prev,
+                  location: {
                     ...prev.location,
                     province: newProvince,
                     city: firstCity,
-                    p24_id: firstCityData?.p24_id || ''
-                  } 
+                    p24_id: firstCityData?.p24_id || "",
+                  },
                 }));
               }}
-              className="input text-sm w-full"
             >
-              {provinces.map(province => (
-                <option key={province} value={province}>{province}</option>
-              ))}
-            </select>
+              <SelectTrigger className="text-sm w-full">
+                <SelectValue placeholder="Select Province" />
+              </SelectTrigger>
+              <SelectContent>
+                {provinces.map((province) => (
+                  <SelectItem key={province} value={province}>
+                    {province}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-          
+
           {/* City */}
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-secondary-700">City</label>
-            <select
+            <label className="block text-sm font-medium text-secondary-700">
+              City
+            </label>
+            <Select
               value={scraperConfig.location.city}
-              onChange={(e) => {
-                const newCity = e.target.value;
-                const currentProvince = scraperConfig.location.province as keyof typeof southAfricanLocations;
-                const provinceData = southAfricanLocations[currentProvince] || {};
+              onValueChange={(value) => {
+                const newCity = value;
+                const currentProvince = scraperConfig.location
+                  .province as keyof typeof southAfricanLocations;
+                const provinceData =
+                  southAfricanLocations[currentProvince] || {};
                 const cityData = provinceData[newCity];
-                setScraperConfig(prev => ({ 
-                  ...prev, 
-                  location: { 
-                    ...prev.location, 
-                    city: newCity, 
-                    p24_id: cityData?.p24_id || '' 
-                  } 
+                setScraperConfig((prev) => ({
+                  ...prev,
+                  location: {
+                    ...prev.location,
+                    city: newCity,
+                    p24_id: cityData?.p24_id || "",
+                  },
                 }));
               }}
-              className="input text-sm w-full"
             >
+              <SelectTrigger className="text-sm w-full">
+                <SelectValue placeholder="Select City" />
+              </SelectTrigger>
+              <SelectContent>
               {Object.keys(
-                southAfricanLocations[scraperConfig.location.province as keyof typeof southAfricanLocations] || {}
-              ).map(city => (
-                <option key={city} value={city}>{city}</option>
+                southAfricanLocations[
+                  scraperConfig.location
+                    .province as keyof typeof southAfricanLocations
+                ] || {}
+              ).map((city) => (
+                <SelectItem key={city} value={city}>
+                  {city}
+                </SelectItem>
               ))}
-            </select>
+            </SelectContent>
+            </Select>
           </div>
-          
+
           {/* Max Pages */}
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-secondary-700">Max Pages to Scrape</label>
-            <input
+            <label className="block text-sm font-medium text-secondary-700">
+              Max Pages to Scrape
+            </label>
+            <Input
               type="number"
               value={scraperConfig.maxPages}
-              onChange={(e) => setScraperConfig(prev => ({ ...prev, maxPages: Number(e.target.value) }))}
-              className="input text-sm w-full"
+              onChange={(e) =>
+                setScraperConfig((prev) => ({
+                  ...prev,
+                  maxPages: Number(e.target.value),
+                }))
+              }
+              className="text-sm w-full"
             />
           </div>
         </div>
-        
+
         {/* Property24 ID Display */}
         {scraperConfig.location.p24_id && (
           <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
             <div className="text-sm text-blue-800">
-              <strong>Property24 Area ID:</strong> {scraperConfig.location.p24_id}
+              <strong>Property24 Area ID:</strong>{" "}
+              {scraperConfig.location.p24_id}
             </div>
             <div className="text-xs text-blue-600 mt-1">
-              This ensures accurate targeting of the {scraperConfig.location.city} area on Property24.
+              This ensures accurate targeting of the{" "}
+              {scraperConfig.location.city} area on Property24.
+            </div>
+          </div>
+        )}
+        
+        {/* Rental Scraping Notice */}
+        {listingType === 'rental' && (
+          <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md">
+            <div className="text-sm text-green-800">
+              <strong>🏠 Rental Property Scraping:</strong> This will scrape rental listings to enable investment yield analysis.
+            </div>
+            <div className="text-xs text-green-600 mt-1">
+              Rental data is needed for calculating rental yields, market analysis, and investment opportunities in your Investor Dashboard.
             </div>
           </div>
         )}
@@ -225,10 +327,11 @@ export default function ScraperPage() {
           <LoadingSpinner size="lg" />
         </div>
       ) : (
-        <ScraperStatus 
-          status={scraperStatus || []} 
+        <ScraperStatus
+          status={scraperStatus || []}
           onRunScraper={handleRunScraper}
           isRunning={isRunning}
+          listingType={listingType}
         />
       )}
 
@@ -238,11 +341,9 @@ export default function ScraperPage() {
           <h3 className="text-lg font-semibold text-secondary-900">
             Recent Scraper Jobs
           </h3>
-          <span className="text-sm text-secondary-500">
-            Last 50 jobs
-          </span>
+          <span className="text-sm text-secondary-500">Last 50 jobs</span>
         </div>
-        
+
         {jobsLoading ? (
           <div className="flex items-center justify-center py-12">
             <LoadingSpinner />
@@ -253,11 +354,11 @@ export default function ScraperPage() {
       </div>
 
       {/* Scraper Settings */}
-      <div className="card">
+      {/* <div className="card">
         <h3 className="text-lg font-semibold text-secondary-900 mb-6">
           Scraper Settings
         </h3>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-4">
             <h4 className="font-medium text-secondary-900">Active Sources</h4>
@@ -268,7 +369,9 @@ export default function ScraperPage() {
                   defaultChecked
                   className="rounded border-secondary-300 text-primary-600 focus:ring-primary-500"
                 />
-                <span className="ml-2 text-sm text-secondary-700">Property24</span>
+                <span className="ml-2 text-sm text-secondary-700">
+                  Property24
+                </span>
               </label>
               <label className="flex items-center">
                 <input
@@ -276,20 +379,26 @@ export default function ScraperPage() {
                   defaultChecked
                   className="rounded border-secondary-300 text-primary-600 focus:ring-primary-500"
                 />
-                <span className="ml-2 text-sm text-secondary-700">Private Property</span>
+                <span className="ml-2 text-sm text-secondary-700">
+                  Private Property
+                </span>
               </label>
             </div>
           </div>
-          
+
           <div className="space-y-4">
-            <h4 className="font-medium text-secondary-900">Scraping Schedule</h4>
+            <h4 className="font-medium text-secondary-900">
+              Scraping Schedule
+            </h4>
             <div className="space-y-2">
               <label className="flex items-center">
                 <input
                   type="checkbox"
                   className="rounded border-secondary-300 text-primary-600 focus:ring-primary-500"
                 />
-                <span className="ml-2 text-sm text-secondary-700">Enable automatic scraping</span>
+                <span className="ml-2 text-sm text-secondary-700">
+                  Enable automatic scraping
+                </span>
               </label>
               <div className="ml-6">
                 <select className="input text-sm w-full">
@@ -301,13 +410,11 @@ export default function ScraperPage() {
             </div>
           </div>
         </div>
-        
+
         <div className="mt-6 pt-6 border-t border-secondary-200">
-          <button className="btn btn-secondary">
-            Save Settings
-          </button>
+          <button className="btn btn-secondary">Save Settings</button>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 }
