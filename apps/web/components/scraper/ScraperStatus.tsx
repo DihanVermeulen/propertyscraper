@@ -3,14 +3,16 @@
 import { IScraperStatus as StatusType } from '../../lib/api';
 import { PlayIcon, CheckCircleIcon, XCircleIcon, ClockIcon } from '@heroicons/react/24/outline';
 import { format } from 'date-fns';
+import { Button } from '../ui/button';
 
 interface ScraperStatusProps {
   status: StatusType[];
   onRunScraper: (source: string) => void;
   isRunning: boolean;
+  listingType?: 'sale' | 'rental';
 }
 
-export default function ScraperStatus({ status, onRunScraper, isRunning }: ScraperStatusProps) {
+export default function ScraperStatus({ status, onRunScraper, isRunning, listingType = 'sale' }: ScraperStatusProps) {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed':
@@ -19,6 +21,8 @@ export default function ScraperStatus({ status, onRunScraper, isRunning }: Scrap
         return <XCircleIcon className="h-5 w-5 text-error-600" />;
       case 'running':
         return <ClockIcon className="h-5 w-5 text-warning-600 animate-spin" />;
+      case 'ready':
+        return <PlayIcon className="h-5 w-5 text-primary-600" />;
       default:
         return <ClockIcon className="h-5 w-5 text-secondary-400" />;
     }
@@ -32,6 +36,8 @@ export default function ScraperStatus({ status, onRunScraper, isRunning }: Scrap
         return 'bg-error-100 text-error-800';
       case 'running':
         return 'bg-warning-100 text-warning-800';
+      case 'ready':
+        return 'bg-primary-100 text-primary-800';
       default:
         return 'bg-secondary-100 text-secondary-800';
     }
@@ -40,8 +46,10 @@ export default function ScraperStatus({ status, onRunScraper, isRunning }: Scrap
   const getSourceDisplayName = (source: string) => {
     switch (source) {
       case 'property24.com':
+      case 'property24':
         return 'Property24';
       case 'privateproperty.co.za':
+      case 'privateproperty':
         return 'Private Property';
       default:
         return source;
@@ -108,26 +116,27 @@ export default function ScraperStatus({ status, onRunScraper, isRunning }: Scrap
 
           {/* Action Button */}
           <div className="mt-6 pt-4 border-t border-secondary-200">
-            <button
+            <Button
               onClick={() => {
                 console.log('ScraperStatus button clicked for:', scraper.source_website);
                 onRunScraper(scraper.source_website);
               }}
+              variant={'default'}
               disabled={isRunning || scraper.status === 'running'}
-              className="btn btn-primary w-full flex items-center justify-center space-x-2"
+              className="w-full flex items-center justify-center space-x-2 h-15"
             >
               {scraper.status === 'running' ? (
                 <>
-                  <ClockIcon className="h-4 w-4 animate-spin" />
+                  <ClockIcon className="h-4 w-4 animate-spin font-bold" />
                   <span>Running...</span>
                 </>
               ) : (
                 <>
-                  <PlayIcon className="h-4 w-4" />
-                  <span>Run Scraper</span>
+                  <PlayIcon className="h-4 w-4 font-bold" />
+                  <span className="font-bold">Run {listingType === 'rental' ? 'Rental' : 'Sale'} Scraper</span>
                 </>
               )}
-            </button>
+            </Button>
           </div>
         </div>
       ))}
