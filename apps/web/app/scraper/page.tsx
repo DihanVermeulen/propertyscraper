@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { scraperApi, ScraperConfig } from "../../lib/api";
+import { scraperApi } from "../../lib/api";
 import ScraperStatus from "../../components/scraper/ScraperStatus";
 import ScraperJobs from "../../components/scraper/ScraperJobs";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
@@ -11,13 +11,12 @@ import { southAfricanLocations, provinces } from "../../lib/locations";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
-
-// ScraperConfig is now imported from api.ts
+import { IScraperConfig } from "../../@types/scraper";
 
 export default function ScraperPage() {
   const [isRunning, setIsRunning] = useState(false);
   const [listingType, setListingType] = useState<'sale' | 'rental'>('sale');
-  const [scraperConfig, setScraperConfig] = useState<ScraperConfig>({
+  const [scraperConfig, setScraperConfig] = useState<IScraperConfig>({
     location: {
       city: "Somerset West",
       province: "Western Cape",
@@ -48,7 +47,7 @@ export default function ScraperPage() {
       config,
     }: {
       source: string;
-      config: ScraperConfig;
+      config: IScraperConfig;
     }) => scraperApi.runScraper(source, config),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["scraper-status"] });
@@ -63,7 +62,7 @@ export default function ScraperPage() {
       config,
     }: {
       source: string;
-      config: ScraperConfig;
+      config: IScraperConfig;
     }) => scraperApi.runRentalScraper(source, config),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["scraper-status"] });
@@ -209,7 +208,7 @@ export default function ScraperPage() {
                 const availableCities = Object.keys(provinceData);
                 const firstCity = availableCities[0] || "";
                 const firstCityData = provinceData[firstCity];
-                setScraperConfig((prev) => ({
+                setScraperConfig((prev: IScraperConfig) => ({
                   ...prev,
                   location: {
                     ...prev.location,
@@ -247,7 +246,7 @@ export default function ScraperPage() {
                 const provinceData =
                   southAfricanLocations[currentProvince] || {};
                 const cityData = provinceData[newCity];
-                setScraperConfig((prev) => ({
+                setScraperConfig((prev: IScraperConfig) => ({
                   ...prev,
                   location: {
                     ...prev.location,
@@ -284,7 +283,7 @@ export default function ScraperPage() {
               type="number"
               value={scraperConfig.maxPages}
               onChange={(e) =>
-                setScraperConfig((prev) => ({
+                setScraperConfig((prev: IScraperConfig) => ({
                   ...prev,
                   maxPages: Number(e.target.value),
                 }))

@@ -1,12 +1,12 @@
 'use client';
 
-import { IScraperStatus as StatusType } from '../../lib/api';
 import { PlayIcon, CheckCircleIcon, XCircleIcon, ClockIcon } from '@heroicons/react/24/outline';
 import { format } from 'date-fns';
 import { Button } from '../ui/button';
+import { IScraperStatus } from '../../@types/scraper';
 
 interface ScraperStatusProps {
-  status: StatusType[];
+  status: IScraperStatus[];     
   onRunScraper: (source: string) => void;
   isRunning: boolean;
   listingType?: 'sale' | 'rental';
