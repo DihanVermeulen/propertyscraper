@@ -5,7 +5,15 @@
       {
         "name": "next"
       }
-    ]
+    ],
+    "paths": {
+      "@/*": ["./*"],
+      "@components/*": ["./components/*"],
+      "@lib/*": ["./lib/*"],
+      "@app-types/*": ["./@types/*"],
+      "@contexts/*": ["./contexts/*"],
+      "@hooks/*": ["./hooks/*"]
+    }
   },
   "include": [
     "**/*.ts",
@@ -14,11 +22,6 @@
     "next.config.js",
     ".next/types/**/*.ts"
   ],
-  "paths": {
-    "@/*": ["./**/*"],
-    "@components/*": ["./components/*"],
-    "@lib/*": ["./lib/*"]
-  },
   "exclude": [
     "node_modules"
   ]

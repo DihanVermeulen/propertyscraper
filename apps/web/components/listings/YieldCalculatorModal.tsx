@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Property } from '../../lib/api';
 import {
   Dialog,
   DialogContent,
@@ -25,6 +24,7 @@ import {
   Percent as PercentIcon,
 } from 'lucide-react';
 import { Alert, AlertDescription } from '../ui/alert';
+import { IProperty } from '@app-types/property';
 
 interface PropertyExpenses {
   municipal_rates: number;
@@ -46,7 +46,7 @@ interface CalculationResult {
 }
 
 interface YieldCalculatorModalProps {
-  property: Property;
+  property: IProperty;
   isOpen: boolean;
   onClose: () => void;
 }
