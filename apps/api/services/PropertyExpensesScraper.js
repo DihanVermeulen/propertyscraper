@@ -57,7 +57,7 @@ class PropertyExpensesScraper {
     page.setDefaultTimeout(30000);
 
     try {
-      logger.info(`Scraping property expenses from: ${propertyUrl}`);
+      logger.info(`Scraping expenses for new property from: ${propertyUrl}`);
 
       await page.goto(propertyUrl, {
         waitUntil: "networkidle",
@@ -70,7 +70,7 @@ class PropertyExpensesScraper {
 
       const expenses = this.extractExpensesFromHTML($);
 
-      logger.info(`Extracted expenses: ${JSON.stringify(expenses)}`);
+      logger.info(`Extracted expenses for new property: ${JSON.stringify(expenses)}`);
 
       // Save to database
       const savedExpenses = await this.saveExpensesToDatabase(
@@ -86,7 +86,7 @@ class PropertyExpensesScraper {
         url: propertyUrl,
       };
     } catch (error) {
-      logger.error(`Error scraping property expenses: ${error.message}`);
+      logger.error(`Error scraping expenses for new property: ${error.message}`);
       await context.close();
 
       return {
