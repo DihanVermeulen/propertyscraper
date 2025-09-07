@@ -2,6 +2,7 @@ const { chromium } = require('playwright');
 const cheerio = require('cheerio');
 const database = require('../db/database');
 const winston = require('winston');
+const PropertyExpensesScraper = require('../services/PropertyExpensesScraper');
 
 // Configure logger
 const logger = winston.createLogger({
@@ -28,6 +29,7 @@ class PrivatePropertyScraper {
             province: 'Western Cape',
             country: 'South Africa'
         };
+        this.expensesScraper = null; // Will be initialized when needed
     }
 
     /**
@@ -246,8 +248,14 @@ class PrivatePropertyScraper {
                             propertiesUpdated++;
                         } else {
                             // Insert new property
-                            await database.insertProperty(property);
+                            const insertResult = await database.insertProperty(property);
                             propertiesNew++;
+                            property.id = insertResult.id; // Store the new property ID
+                            
+                            // Scrape property expenses only for new properties to avoid IP blocking
+                            if (property.source_url && property.id) {
+                                await this.scrapePropertyExpenses(property.id, property.source_url);
+                            }
                         }
                         
                         logger.info(`Processed: ${property.title} - R${property.price}`);
@@ -274,6 +282,16 @@ class PrivatePropertyScraper {
         } finally {
             if (browser) {
                 await browser.close();
+            }
+            
+            // Clean up expenses scraper if it was initialized
+            if (this.expensesScraper) {
+                try {
+                    await this.expensesScraper.close();
+                } catch (error) {
+                    logger.warn(`Error closing expenses scraper: ${error.message}`);
+                }
+                this.expensesScraper = null;
             }
         }
         
@@ -483,6 +501,34 @@ class PrivatePropertyScraper {
         }
         
         return property;
+    }
+    
+    /**
+     * Scrape property expenses for a given property (only called for new properties)
+     * @param {number} propertyId - The property ID in the database
+     * @param {string} propertyUrl - The URL of the property detail page
+     */
+    async scrapePropertyExpenses(propertyId, propertyUrl) {
+        try {
+            logger.info(`Scraping expenses for new property ${propertyId} from ${propertyUrl}`);
+            
+            // Initialize the expenses scraper if not already done
+            if (!this.expensesScraper) {
+                this.expensesScraper = new PropertyExpensesScraper();
+            }
+            
+            // Scrape the expenses for the new property
+            const scrapeResult = await this.expensesScraper.scrapePropertyExpenses(propertyUrl, propertyId);
+            
+            if (scrapeResult.success) {
+                logger.info(`Successfully scraped expenses for new property ${propertyId}: Municipal rates: R${scrapeResult.expenses.municipal_rates}, Body corporate: R${scrapeResult.expenses.body_corporate_levies}`);
+            } else {
+                logger.warn(`Failed to scrape expenses for new property ${propertyId}: ${scrapeResult.error}`);
+            }
+        } catch (error) {
+            logger.error(`Error scraping expenses for new property ${propertyId}: ${error.message}`);
+            // Don't throw the error - expenses scraping failure shouldn't break property scraping
+        }
     }
 }
 

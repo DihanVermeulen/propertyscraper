@@ -3,6 +3,8 @@ const cheerio = require("cheerio");
 const database = require("../db/database");
 const winston = require("winston");
 const DelistingDetectionService = require("../services/DelistingDetectionService");
+const PropertyExpensesScraper = require("../services/PropertyExpensesScraper");
+const Property24Extractor = require("./templates/property24Extractor");
 
 // Configure logger
 const logger = winston.createLogger({
@@ -31,6 +33,8 @@ class Property24Scraper {
       country: "South Africa",
     };
     this.possibleUrls = []; // Store alternative URLs for fallback
+    this.expensesScraper = null; // Will be initialized when needed
+    this.extractor = new Property24Extractor(this.baseUrl); // Template-based extractor for property cards
   }
 
   /**
@@ -443,10 +447,8 @@ class Property24Scraper {
             const listing = listings.eq(i);
             propertiesFound++;
 
-            // Extract basic property data
-            const property = this.listingType === 'rent'
-              ? await this.extractRentalPropertyData($, listing, location)
-              : await this.extractSalePropertyData($, listing, location);
+            // Use the template-based extractor to extract property data
+            const property = this.extractor.extractPropertyData($, listing, location, this.listingType);
 
             // Filter properties to only include Somerset West area
             const isInTargetLocation = this.isInTargetLocation(
@@ -527,9 +529,16 @@ class Property24Scraper {
                   );
                   propertiesUpdated++;
                 } else {
-                  await database.insertProperty(property);
+                  const insertResult = await database.insertProperty(property);
                   propertiesNew++;
+                  property.id = insertResult.id; // Store the new property ID
+                  
+                  // Scrape property expenses only for new properties to avoid IP blocking
+                  // if (property.source_url && property.id) {
+                  //   await this.scrapePropertyExpenses(property.id, property.source_url);
+                  // }
                 }
+                
                 logger.info(`Processed: ${property.title} - R${property.price}`);
               }
             } else {
@@ -645,6 +654,16 @@ class Property24Scraper {
       if (browser) {
         await browser.close();
       }
+      
+      // Clean up expenses scraper if it was initialized
+      if (this.expensesScraper) {
+        try {
+          await this.expensesScraper.close();
+        } catch (error) {
+          logger.warn(`Error closing expenses scraper: ${error.message}`);
+        }
+        this.expensesScraper = null;
+      }
     }
 
     return {
@@ -684,499 +703,9 @@ class Property24Scraper {
     return (cityMatch || suburbMatch) && provinceMatch;
   }
 
-  async extractSalePropertyData($, listing, location = null) {
-    const property = {
-      source_website: this.source,
-      external_id: null,
-      title: null,
-      description: null,
-      price: null,
-      price_currency: "ZAR",
-      property_type: null,
-      bedrooms: null,
-      bathrooms: null,
-      parking_spaces: null,
-      floor_area: null,
-      location_province: null,
-      location_city: null,
-      location_suburb: null,
-      location_address: null,
-      source_url: null,
-      images: [],
-      features: [],
-      agent_name: null,
-      agent_phone: null,
-      listing_date: null,
-    };
+  // Old extractSalePropertyData method removed - now using template-based extractor
 
-    try {
-      // Extract external ID from data-listing-number attribute (primary method)
-      property.external_id =
-        listing.attr("data-listing-number") ||
-        listing
-          .find("[data-listing-number]")
-          .first()
-          .attr("data-listing-number") ||
-        listing
-          .find("a")
-          .attr("href")
-          ?.match(/\/(\d+)\?/)?.[1] ||
-        `p24_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-      logger.info(`Processing property with ID: ${property.external_id}`);
-
-      // Extract title from the actual HTML structure
-      // First try the link title attribute
-      const titleElement = listing.find(".p24_proTile[title]").first();
-      if (titleElement.length > 0) {
-        property.title = titleElement.attr("title");
-      }
-
-      // Fallback: extract from description text
-      if (!property.title) {
-        const descElement = listing.find(".p24_description").first();
-        if (descElement.length > 0) {
-          property.title = descElement.text().trim();
-        }
-      }
-
-      // Extract source URL from the main link
-      const linkEl = listing.find('a[href*="/for-sale/"]').first();
-      if (linkEl.length > 0) {
-        const href = linkEl.attr("href");
-        property.source_url = href.startsWith("http")
-          ? href
-          : this.baseUrl + href;
-      }
-
-      logger.info(`Title extracted: ${property.title}`);
-      logger.info(`URL extracted: ${property.source_url}`);
-
-      // Extract description
-      const descSelectors = [
-        ".p24_description",
-        ".listing-description",
-        ".property-description",
-        ".description",
-      ];
-      for (const selector of descSelectors) {
-        const descEl = listing.find(selector);
-        if (descEl.length > 0) {
-          property.description = descEl.text().trim();
-          break;
-        }
-      }
-
-      // Extract price from the actual HTML structure
-      const priceEl = listing.find(".p24_price").first();
-      if (priceEl.length > 0) {
-        const priceText = priceEl
-          .text()
-          .replace(/[^\d\s]/g, "")
-          .replace(/\s+/g, "")
-          .trim();
-        property.price = parseFloat(priceText) || null;
-        logger.info(`Price extracted: ${priceText} -> ${property.price}`);
-      }
-
-      // Extract property details from structured elements and text
-      const detailsText = listing.text().toLowerCase();
-
-      // Extract bedrooms from structured data
-      const bedroomFeature = listing
-        .find('.p24_featureDetails[title="Bedrooms"] span')
-        .last();
-      if (bedroomFeature.length > 0) {
-        const bedroomText = bedroomFeature.text().trim();
-        property.bedrooms = parseInt(bedroomText) || null;
-        logger.info(
-          `Bedrooms extracted: ${bedroomText} -> ${property.bedrooms}`
-        );
-      }
-
-      // Extract bathrooms from structured data
-      const bathroomFeature = listing
-        .find('.p24_featureDetails[title="Bathrooms"] span')
-        .last();
-      if (bathroomFeature.length > 0) {
-        const bathroomText = bathroomFeature.text().trim();
-        property.bathrooms = parseFloat(bathroomText) || null; // Use parseFloat for values like 1.5
-        logger.info(
-          `Bathrooms extracted: ${bathroomText} -> ${property.bathrooms}`
-        );
-      }
-
-      // Extract parking spaces from structured data
-      const parkingFeature = listing
-        .find('.p24_featureDetails[title="Parking Spaces"] span')
-        .last();
-      if (parkingFeature.length > 0) {
-        const parkingText = parkingFeature.text().trim();
-        property.parking_spaces = parseInt(parkingText) || null;
-        logger.info(
-          `Parking extracted: ${parkingText} -> ${property.parking_spaces}`
-        );
-      }
-
-      // Extract floor size from structured data
-      const floorSizeElement = listing.find('.p24_size[title="Erf Size"] span').last();
-      if (floorSizeElement.length > 0) {
-        const floorSizeText = floorSizeElement.text().trim();
-        // Extract numeric value from text like "361 m²" or "361 m2" or "361m²"
-        const sizeMatch = floorSizeText.match(/([0-9,\\s]+)\\s*m[²2]/i);
-        if (sizeMatch && sizeMatch[1]) {
-          const sizeValue = sizeMatch[1].replace(/[,\\s]/g, ''); // Remove commas and spaces
-          property.floor_area = parseInt(sizeValue) || null;
-          logger.info(
-            `Floor size extracted: ${floorSizeText} -> ${property.floor_area} m²`
-          );
-        }
-      } else {
-        // Try alternative selectors for floor size
-        const altFloorSizeSelectors = [
-          '.p24_size span', // Generic size element
-          '.p24_erfSize', // Specific erf size class if it exists
-          '.p24_floorSize', // Floor size class if it exists
-        ];
-        
-        for (const selector of altFloorSizeSelectors) {
-          const altFloorSizeEl = listing.find(selector);
-          if (altFloorSizeEl.length > 0) {
-            const floorSizeText = altFloorSizeEl.text().trim();
-            const sizeMatch = floorSizeText.match(/([0-9,\\s]+)\\s*m[²2]/i);
-            if (sizeMatch && sizeMatch[1]) {
-              const sizeValue = sizeMatch[1].replace(/[,\\s]/g, '');
-              property.floor_area = parseInt(sizeValue) || null;
-              logger.info(
-                `Floor size extracted (alt): ${floorSizeText} -> ${property.floor_area} m²`
-              );
-              break;
-            }
-          }
-        }
-      }
-
-      // Property type
-      if (detailsText.includes("house")) property.property_type = "house";
-      else if (
-        detailsText.includes("apartment") ||
-        detailsText.includes("flat")
-      )
-        property.property_type = "apartment";
-      else if (detailsText.includes("townhouse"))
-        property.property_type = "townhouse";
-      else if (
-        detailsText.includes("vacant land") ||
-        detailsText.includes("plot")
-      )
-        property.property_type = "vacant land";
-
-            // Extract location from the actual HTML structure
-            const locationEl = listing.find('.p24_location').first();
-            if (locationEl.length > 0) {
-                const locationText = locationEl.text().trim();
-                property.location_suburb = locationText;
-                property.location_city = location.city; // Set from scraper context
-                property.location_province = location.province; // Set from scraper context
-                property.p24_id = location.p24_id; // Pass along Property24 ID
-                logger.info(`Location extracted: ${locationText}`);
-            }
-
-      // Extract address if available
-      const addressEl = listing.find(".p24_address").first();
-      if (addressEl.length > 0) {
-        property.location_address = addressEl.text().trim();
-        logger.info(`Address extracted: ${property.location_address}`);
-      }
-
-      // Extract listing date - try to find date information
-      const dateSelectors = [
-        '.p24_listingDate',
-        '.listing-date',
-        '.date-listed',
-        '.p24_dateAdded'
-      ];
-      
-      for (const selector of dateSelectors) {
-        const dateEl = listing.find(selector);
-        if (dateEl.length > 0) {
-          const dateText = dateEl.text().trim();
-          // Try to parse various date formats
-          const dateMatch = dateText.match(/(\\d{1,2})[\\/-](\\d{1,2})[\\/-](\\d{4})|(\\d{4})[\\/-](\\d{1,2})[\\/-](\\d{1,2})/);
-          if (dateMatch) {
-            // Convert to ISO format
-            if (dateMatch[1] && dateMatch[2] && dateMatch[3]) {
-              // DD/MM/YYYY or MM/DD/YYYY format
-              const day = dateMatch[1].padStart(2, '0');
-              const month = dateMatch[2].padStart(2, '0');
-              const year = dateMatch[3];
-              property.listing_date = `${year}-${month}-${day}`;
-            } else if (dateMatch[4] && dateMatch[5] && dateMatch[6]) {
-              // YYYY/MM/DD format
-              const year = dateMatch[4];
-              const month = dateMatch[5].padStart(2, '0');
-              const day = dateMatch[6].padStart(2, '0');
-              property.listing_date = `${year}-${month}-${day}`;
-            }
-            break;
-          }
-        }
-      }
-      
-      // If no explicit date found, use current date as fallback
-      if (!property.listing_date) {
-        property.listing_date = new Date().toISOString().split('T')[0];
-      }
-      
-      logger.info(`Listing date extracted/assigned: ${property.listing_date}`);
-
-      // Extract agent info
-      const agentSelectors = [".p24_agent", ".listing-agent", ".agent-name"];
-      for (const selector of agentSelectors) {
-        const agentEl = listing.find(selector);
-        if (agentEl.length > 0) {
-          property.agent_name = agentEl.text().trim();
-          break;
-        }
-      }
-
-      // Extract images
-      const imgElements = listing.find("img");
-      imgElements.each((i, img) => {
-        const src = $(img).attr("src") || $(img).attr("data-src");
-        if (src && !src.includes("placeholder") && !src.includes("logo")) {
-          property.images.push(
-            src.startsWith("http") ? src : this.baseUrl + src
-          );
-        }
-      });
-    } catch (error) {
-      logger.error("Error extracting property data:", error.message);
-    }
-
-    return property;
-  }
-
-  async extractRentalPropertyData($, listing, location = null) {
-    const property = {
-      source_website: this.source,
-      external_id: null,
-      title: null,
-      description: null,
-      rental_price: null,
-      rental_period: 'monthly',
-      deposit: null,
-      lease_terms: null,
-      available_date: null,
-      furnished_status: null,
-      utilities_included: [],
-      pet_policy: null,
-      property_type: null,
-      bedrooms: null,
-      bathrooms: null,
-      parking_spaces: null,
-      floor_area: null,
-      erf_size: null,
-      location_province: null,
-      location_city: null,
-      location_suburb: null,
-      location_address: null,
-      latitude: null,
-      longitude: null,
-      source_url: null,
-      images: [],
-      features: [],
-      agent_name: null,
-      agent_phone: null,
-      agent_email: null,
-      listing_date: null,
-    };
-
-    try {
-      // Extract external ID from listing
-      const listingNumberEl = listing.find('[data-listing-number]');
-      if (listingNumberEl.length > 0) {
-        property.external_id = listingNumberEl.attr('data-listing-number');
-      } else {
-        // Fallback: extract from URL or generate
-        const linkEl = listing.find('a[href*="/to-rent/"]').first();
-        if (linkEl.length > 0) {
-          const href = linkEl.attr('href');
-          const match = href.match(/\/(\d+)$/);
-          property.external_id = match ? match[1] : `p24r_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        }
-      }
-
-      // Extract title and URL
-      const titleLinkEl = listing.find('a[href*="/to-rent/"]').first();
-      if (titleLinkEl.length > 0) {
-        // Try to get title from specific selectors first
-        const titleEl = titleLinkEl.find('.p24_title, h3, h4, .title').first();
-        if (titleEl.length > 0) {
-          property.title = titleEl.text().trim();
-        } else {
-          // Fallback to link text but clean it up
-          let titleText = titleLinkEl.text().trim();
-          // Remove price and details, keep only the main title
-          titleText = titleText.replace(/R\s*[\d,]+.*$/i, '').trim();
-          titleText = titleText.split('\n')[0].trim(); // Take only first line
-          property.title = titleText || 'Property for Rent';
-        }
-        
-        const href = titleLinkEl.attr('href');
-        property.source_url = href && href.startsWith('http') ? href : this.baseUrl + href;
-      }
-
-      // Extract rental price - look for rental-specific price indicators
-      const priceEl = listing.find('.p24_price, .js_p24Price, .price');
-      if (priceEl.length > 0) {
-        const priceText = priceEl.text().replace(/[^\d.]/g, '');
-        property.rental_price = parseFloat(priceText) || null;
-        
-        // Determine rental period from price text
-        const fullPriceText = priceEl.text().toLowerCase();
-        if (fullPriceText.includes('per week') || fullPriceText.includes('/week')) {
-          property.rental_period = 'weekly';
-        } else if (fullPriceText.includes('per day') || fullPriceText.includes('/day')) {
-          property.rental_period = 'daily';
-        } else {
-          property.rental_period = 'monthly'; // Default
-        }
-      }
-
-      // Extract property details from text content
-      const detailsText = listing.text().toLowerCase();
-      
-      // Bedrooms
-      const bedroomMatch = detailsText.match(/(\d+)\s*(bed|bedroom)/);
-      property.bedrooms = bedroomMatch ? parseInt(bedroomMatch[1]) : null;
-
-      // Bathrooms
-      const bathroomMatch = detailsText.match(/(\d+)\s*(bath|bathroom)/);
-      property.bathrooms = bathroomMatch ? parseInt(bathroomMatch[1]) : null;
-
-      // Parking
-      const parkingMatch = detailsText.match(/(\d+)\s*(garage|parking|carport)/);
-      property.parking_spaces = parkingMatch ? parseInt(parkingMatch[1]) : null;
-
-      // Floor area
-      const areaMatch = detailsText.match(/(\d+)\s*(m2|sqm|square)/);
-      property.floor_area = areaMatch ? parseInt(areaMatch[1]) : null;
-
-      // Property type detection
-      if (detailsText.includes('house') || detailsText.includes('home')) property.property_type = 'house';
-      else if (detailsText.includes('apartment') || detailsText.includes('flat')) property.property_type = 'apartment';
-      else if (detailsText.includes('townhouse') || detailsText.includes('town house')) property.property_type = 'townhouse';
-      else if (detailsText.includes('studio')) property.property_type = 'studio';
-      else if (detailsText.includes('commercial')) property.property_type = 'commercial';
-
-      // Rental-specific extractions
-      
-      // Furnished status detection
-      if (detailsText.includes('furnished')) {
-        if (detailsText.includes('unfurnished')) {
-          property.furnished_status = 'unfurnished';
-        } else if (detailsText.includes('semi-furnished') || detailsText.includes('partially furnished')) {
-          property.furnished_status = 'semi-furnished';
-        } else {
-          property.furnished_status = 'furnished';
-        }
-      }
-
-      // Pet policy detection
-      if (detailsText.includes('pet friendly') || detailsText.includes('pets allowed')) {
-        property.pet_policy = 'allowed';
-      } else if (detailsText.includes('no pets') || detailsText.includes('pets not allowed')) {
-        property.pet_policy = 'not_allowed';
-      } else if (detailsText.includes('cats only')) {
-        property.pet_policy = 'cats_only';
-      } else if (detailsText.includes('dogs only')) {
-        property.pet_policy = 'dogs_only';
-      }
-
-      // Utilities included detection
-      const utilities = [];
-      if (detailsText.includes('water included')) utilities.push('water');
-      if (detailsText.includes('electricity included')) utilities.push('electricity');
-      if (detailsText.includes('wifi included') || detailsText.includes('internet included')) utilities.push('wifi');
-      if (detailsText.includes('gas included')) utilities.push('gas');
-      if (detailsText.includes('dstv') || detailsText.includes('satellite tv')) utilities.push('satellite_tv');
-      property.utilities_included = utilities;
-
-      // Deposit extraction
-      const depositMatch = detailsText.match(/deposit[:\s]*r?\s*(\d+(?:,\d+)*(?:\.\d+)?)/i);
-      if (depositMatch) {
-        property.deposit = parseFloat(depositMatch[1].replace(/,/g, ''));
-      }
-
-      // Available date extraction
-      const availableMatch = detailsText.match(/available[:\s]*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/i);
-      if (availableMatch) {
-        property.available_date = availableMatch[1];
-      } else if (detailsText.includes('available immediately')) {
-        property.available_date = new Date().toISOString().split('T')[0];
-      }
-
-      // Extract location information
-      const locationEl = listing.find('.p24_location, .js_p24Location, .location');
-      if (locationEl.length > 0) {
-        const locationText = locationEl.text().trim();
-        const parts = locationText.split(',').map(s => s.trim());
-        
-        if (parts.length >= 2) {
-          property.location_suburb = parts[0];
-          property.location_city = parts[1];
-        } else if (parts.length === 1) {
-          property.location_city = parts[0];
-        }
-        
-        // Set province based on city
-        if (location) {
-          property.location_province = location.province;
-        }
-      }
-
-      // Extract agent information
-      const agentEl = listing.find('.p24_agentName, .agent-name, .js_agentName');
-      if (agentEl.length > 0) {
-        property.agent_name = agentEl.text().trim();
-      }
-
-      // Extract agent phone
-      const phoneEl = listing.find('.p24_agentPhone, .agent-phone, .js_agentPhone');
-      if (phoneEl.length > 0) {
-        property.agent_phone = phoneEl.text().trim();
-      }
-
-      // Extract images
-      const imgElements = listing.find('img');
-      imgElements.each((i, img) => {
-        const src = $(img).attr('src') || $(img).attr('data-src') || $(img).attr('data-lazy');
-        if (src && !src.includes('placeholder') && !src.includes('logo') && !src.includes('icon')) {
-          const fullSrc = src.startsWith('http') ? src : this.baseUrl + src;
-          if (!property.images.includes(fullSrc)) {
-            property.images.push(fullSrc);
-          }
-        }
-      });
-
-      // Extract features from detailed text
-      const featuresEl = listing.find('.p24_features, .features, .amenities');
-      if (featuresEl.length > 0) {
-        featuresEl.find('li, span, div').each((i, el) => {
-          const feature = $(el).text().trim().toLowerCase();
-          if (feature && feature.length > 2 && feature.length < 50) {
-            property.features.push(feature);
-          }
-        });
-      }
-
-    } catch (error) {
-      logger.error('Error extracting rental property data:', error.message);
-    }
-
-    return property;
-  }
+  // Old extractRentalPropertyData method removed - now using template-based extractor
 
   /**
    * Detect if there's a next page using multiple strategies
@@ -1414,6 +943,34 @@ class Property24Scraper {
     } catch (error) {
       logger.warn(`Error estimating expected properties: ${error.message}`);
       return totalPages * 20; // Safe fallback
+    }
+  }
+
+  /**
+   * Scrape property expenses for a given property (only called for new properties)
+   * @param {number} propertyId - The property ID in the database
+   * @param {string} propertyUrl - The URL of the property detail page
+   */
+  async scrapePropertyExpenses(propertyId, propertyUrl) {
+    try {
+      logger.info(`Scraping expenses for new property ${propertyId} from ${propertyUrl}`);
+      
+      // Initialize the expenses scraper if not already done
+      if (!this.expensesScraper) {
+        this.expensesScraper = new PropertyExpensesScraper();
+      }
+      
+      // Scrape the expenses for the new property
+      const scrapeResult = await this.expensesScraper.scrapePropertyExpenses(propertyUrl, propertyId);
+      
+      if (scrapeResult.success) {
+        logger.info(`Successfully scraped expenses for new property ${propertyId}: Municipal rates: R${scrapeResult.expenses.municipal_rates}, Body corporate: R${scrapeResult.expenses.body_corporate_levies}`);
+      } else {
+        logger.warn(`Failed to scrape expenses for new property ${propertyId}: ${scrapeResult.error}`);
+      }
+    } catch (error) {
+      logger.error(`Error scraping expenses for new property ${propertyId}: ${error.message}`);
+      // Don't throw the error - expenses scraping failure shouldn't break property scraping
     }
   }
 
