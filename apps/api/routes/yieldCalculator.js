@@ -72,6 +72,64 @@ router.get('/property-expenses/:propertyId', async (req, res) => {
 });
 
 /**
+ * Update property expenses (user input)
+ */
+router.put('/property-expenses/:propertyId', async (req, res) => {
+    try {
+        const { propertyId } = req.params;
+        const expenses = req.body;
+        
+        // Validate that property exists
+        const property = await database.get('SELECT * FROM properties WHERE id = ?', [propertyId]);
+        if (!property) {
+            return res.status(404).json({ error: 'Property not found' });
+        }
+
+        // Update or insert expenses
+        const existingExpenses = await database.getPropertyExpenses(propertyId, 'properties');
+        
+        if (existingExpenses) {
+            // Update existing
+            await database.run(`
+                UPDATE property_expenses SET 
+                    municipal_rates = ?, body_corporate_levies = ?, 
+                    insurance_estimate = ?, maintenance_reserve = ?, 
+                    data_source = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE property_id = ? AND property_table = 'properties'
+            `, [
+                expenses.municipal_rates || 0,
+                expenses.body_corporate_levies || 0,
+                expenses.insurance_estimate || 0,
+                expenses.maintenance_reserve || 0,
+                expenses.data_source || 'user_input',
+                propertyId
+            ]);
+        } else {
+            // Insert new
+            await database.insertPropertyExpenses({
+                property_id: propertyId,
+                property_table: 'properties',
+                municipal_rates: expenses.municipal_rates || 0,
+                body_corporate_levies: expenses.body_corporate_levies || 0,
+                insurance_estimate: expenses.insurance_estimate || 0,
+                maintenance_reserve: expenses.maintenance_reserve || 0,
+                municipal_taxes: 0,
+                property_tax: 0,
+                transfer_costs: 0,
+                bond_costs: 0,
+                data_source: expenses.data_source || 'user_input'
+            });
+        }
+
+        res.json({ success: true, message: 'Expenses updated successfully' });
+
+    } catch (error) {
+        console.error('Error updating property expenses:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+/**
  * Calculate rental yield based on user inputs
  */
 router.post('/calculate-yield', async (req, res) => {
