@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { IPropertyFilters as FilterProps } from "../../lib/api";
 import { MagnifyingGlassIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { Filter, Search, X } from "lucide-react";
 import { SidebarInput } from "../ui/sidebar";
@@ -15,10 +14,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
+import { IPropertyFilters } from "@/@types/property";
 
 interface PropertyFiltersComponentProps {
-  filters: FilterProps;
-  onFilterChange: (filters: Partial<FilterProps>) => void;
+  filters: IPropertyFilters;
+  onFilterChange: (filters: Partial<IPropertyFilters>) => void;
 }
 
 export default function PropertyFilters({
@@ -67,7 +67,7 @@ export default function PropertyFilters({
     setSearchTerm("");
   };
 
-  const removeFilter = (filterKey: keyof FilterProps) => {
+  const removeFilter = (filterKey: keyof IPropertyFilters) => {
     onFilterChange({ [filterKey]: undefined });
   };
 

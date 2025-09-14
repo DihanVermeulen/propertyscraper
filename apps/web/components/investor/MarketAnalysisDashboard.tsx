@@ -7,7 +7,7 @@ import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import LoadingSpinner from '../ui/LoadingSpinner';
-import { investorApi, IMarketAnalysis } from '../../lib/api';
+import { investorApi } from '../../lib/api';
 import { BarChart, TrendingUp, TrendingDown, Home, Building, DollarSign, Calendar, AlertCircle } from 'lucide-react';
 
 interface IMarketAnalysisDashboardProps {

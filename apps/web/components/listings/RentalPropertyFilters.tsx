@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { IRentalPropertyFilters } from "../../lib/api";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { Filter, Search, X } from "lucide-react";
 import { Input } from "../ui/input";
@@ -14,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
+import { IRentalPropertyFilters } from "@/@types/property";
 
 interface IRentalPropertyFiltersProps {
   filters: IRentalPropertyFilters;

@@ -348,7 +348,7 @@ export default function ScraperPage() {
             <LoadingSpinner />
           </div>
         ) : (
-          <ScraperJobs jobs={scrapeJobs || []} />
+          scrapeJobs && <ScraperJobs jobs={scrapeJobs || []} />
         )}
       </div>
 

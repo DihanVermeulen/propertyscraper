@@ -2,11 +2,12 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { propertiesApi, IPropertyFilters } from '../../../lib/api';
+import { propertiesApi } from '../../../lib/api';
 import PropertyCard from '../../../components/listings/PropertyCard';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import Pagination from '../../../components/ui/Pagination';
 import PropertyFilters from '../../../components/listings/PropertyFilters';
+import { IPropertyFilters } from '@/@types/property';
 
 export default function ForSalePropertiesPage() {
   const [filters, setFilters] = useState<IPropertyFilters>({

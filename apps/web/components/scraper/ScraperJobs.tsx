@@ -1,7 +1,8 @@
 'use client';
 
-import { IScrapeJob, ILogEntry } from '../../lib/api';
+import { ILogEntry } from '@/@types/log';
 import { CheckCircleIcon, XCircleIcon, ClockIcon, EyeIcon } from '@heroicons/react/24/outline';
+import { IScrapeJob } from '@repo/core/types';
 import { format } from 'date-fns';
 import { useState } from 'react';
 

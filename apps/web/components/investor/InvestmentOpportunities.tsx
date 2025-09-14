@@ -8,7 +8,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import LoadingSpinner from '../ui/LoadingSpinner';
-import { investorApi, IInvestmentOpportunity } from '../../lib/api';
+import { investorApi } from '../../lib/api';
 import { TrendingUp, MapPin, Bed, Bath, Car, Home, DollarSign, Star } from 'lucide-react';
 
 interface IInvestmentOpportunitiesProps {

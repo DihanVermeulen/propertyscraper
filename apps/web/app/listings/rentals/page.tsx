@@ -2,11 +2,12 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { rentalPropertiesApi, IRentalPropertyFilters } from '../../../lib/api';
+import { rentalPropertiesApi } from '../../../lib/api';
 import RentalPropertyCard from '../../../components/listings/RentalPropertyCard';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import Pagination from '../../../components/ui/Pagination';
 import RentalPropertyFilters from '../../../components/listings/RentalPropertyFilters';
+import { IRentalPropertyFilters } from '@/@types/property';
 
 export default function RentalPropertiesPage() {
   const [filters, setFilters] = useState<IRentalPropertyFilters>({

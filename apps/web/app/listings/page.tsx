@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
-import { propertiesApi, rentalPropertiesApi, IPropertyFilters, IRentalPropertyFilters } from '../../lib/api';
+import { propertiesApi, rentalPropertiesApi } from '../../lib/api';
 import PropertyCard from '../../components/listings/PropertyCard';
 import RentalPropertyCard from '../../components/listings/RentalPropertyCard';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
@@ -11,6 +11,7 @@ import Pagination from '../../components/ui/Pagination';
 import PropertyFilters from '../../components/listings/PropertyFilters';
 import RentalPropertyFilters from '../../components/listings/RentalPropertyFilters';
 import { Home, Building } from 'lucide-react';
+import { IPropertyFilters, IRentalPropertyFilters } from '@/@types/property';
 
 export default function ListingsPage() {
   const [saleFilters, setSaleFilters] = useState<IPropertyFilters>({

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { IRentalProperty } from '../../lib/api';
 import { 
   MapPinIcon, 
   HomeIcon, 
@@ -12,13 +11,7 @@ import {
   WifiIcon
 } from '@heroicons/react/24/outline';
 import { format } from 'date-fns';
-import { Button } from '../ui/button';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '../ui/tooltip';
+import { IRentalProperty } from '@repo/core/types';
 
 interface IRentalPropertyCardProps {
   property: IRentalProperty;

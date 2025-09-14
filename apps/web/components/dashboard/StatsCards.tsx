@@ -1,12 +1,12 @@
 'use client';
 
+import { IDashboardStats } from '@/@types/dashboard';
 import { 
   BuildingOfficeIcon, 
   CurrencyDollarIcon, 
   ArrowTrendingUpIcon, 
   ArrowTrendingDownIcon 
 } from '@heroicons/react/24/outline';
-import { IDashboardStats } from '../../lib/api';
 
 interface StatsCardsProps {
   stats?: IDashboardStats;
