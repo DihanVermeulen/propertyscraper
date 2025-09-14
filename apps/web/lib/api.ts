@@ -3,7 +3,8 @@ import { IDashboardStats } from "../@types/dashboard";
 import { IPropertiesResponse, IProperty, IPropertyExpenses, IPropertyFilters, IRentalPropertiesResponse, IRentalProperty, IRentalPropertyFilters } from "../@types/property";
 import { IPriceHistoryData, IPriceHistoryResponse, ITimeOnMarketResponse } from "../@types/analytics";
 import { IInvestmentOpportunity, IMarketAnalysis, IRentalMarketStats, IRentalYieldAnalysis } from "../@types/investor";
-import { IScrapeJob, IScraperConfig, IScraperStatus } from "../@types/scraper";
+import { IScrapeJob } from "@repo/core/types";
+import { IScraperConfig, IScraperStatus } from "@/@types/scraper";
 
 // Use relative path in development for Next.js rewrites, absolute URL for production
 const API_BASE_URL = process.env.NODE_ENV === 'development' 
@@ -48,6 +49,11 @@ export const propertiesApi = {
   getProperty: async (id: number): Promise<IProperty> => {
     const response = await api.get(`/api/properties/${id}`);
     return response.data;
+  },
+
+  // Deactivate a property
+  deactivateProperty: async (id: number): Promise<void> => {
+    await api.post(`/api/properties/${id}/deactivate`);
   },
 
   // Get dashboard statistics
