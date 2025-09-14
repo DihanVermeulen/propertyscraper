@@ -4,18 +4,18 @@ import { cn } from "../../lib/utils";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "../../contexts/AuthContext";
-import { 
-  Sidebar, 
-  SidebarContent, 
-  SidebarGroup, 
-  SidebarGroupContent, 
-  SidebarGroupLabel, 
-  SidebarMenu, 
-  SidebarMenuItem, 
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuItem,
   SidebarMenuButton,
   SidebarHeader,
   SidebarFooter,
-  SidebarProvider
+  SidebarProvider,
 } from "../ui/sidebar";
 import {
   HomeIcon,
@@ -40,29 +40,63 @@ const getNavigation = (userRole?: string) => {
       children: [
         { name: "All Properties", href: "/listings", visible: true },
         { name: "By Location", href: "/listings/locations", visible: true },
-        { name: "Price History", href: "/listings/prices", visible: process.env.NEXT_PUBLIC_FEATURE_PRICE_History_ENABLED === 'true' || false },
-        { name: "Time on Market", href: "/listings/time-on-market", visible: process.env.NEXT_PUBLIC_FEATURE_TIME_ON_MARKET_ENABLED === 'true' || false },
+        {
+          name: "Price History",
+          href: "/listings/prices",
+          visible:
+            process.env.NEXT_PUBLIC_FEATURE_PRICE_History_ENABLED === "true" ||
+            false,
+        },
+        {
+          name: "Time on Market",
+          href: "/listings/time-on-market",
+          visible:
+            process.env.NEXT_PUBLIC_FEATURE_TIME_ON_MARKET_ENABLED === "true" ||
+            false,
+        },
       ],
     },
     {
       name: "Investor Dashboard",
       href: "/investor",
       icon: ChartBarSquareIcon,
-      visible: process.env.NEXT_PUBLIC_FEATURE_INVESTOR_DASHBOARD_ENABLED === 'true' || false,
+      visible:
+        process.env.NEXT_PUBLIC_FEATURE_INVESTOR_DASHBOARD_ENABLED === "true" ||
+        false,
       children: [
         { name: "Overview", href: "/investor", visible: true },
-        { name: "Yield Calculator", href: "/investor/calculator", visible: true },
+        {
+          name: "Yield Calculator",
+          href: "/investor/calculator",
+          visible: true,
+        },
         { name: "Market Analysis", href: "/investor/market", visible: true },
-        { name: "Opportunities", href: "/investor/opportunities", visible: true },
+        {
+          name: "Opportunities",
+          href: "/investor/opportunities",
+          visible: true,
+        },
       ],
     },
-    { name: "Trends & Analytics", href: "/analytics", icon: ArrowTrendingUpIcon, visible: process.env.NEXT_PUBLIC_FEATURE_TRENDS_ANALYTICS_ENABLED === 'true' || false },
+    {
+      name: "Trends & Analytics",
+      href: "/analytics",
+      icon: ArrowTrendingUpIcon,
+      visible:
+        process.env.NEXT_PUBLIC_FEATURE_TRENDS_ANALYTICS_ENABLED === "true" ||
+        false,
+    },
   ];
 
   // Add admin-specific navigation
-  if (userRole === 'admin') {
+  if (userRole === "admin") {
     baseNavigation.push(
-      { name: "Scraper Controls", href: "/scraper", icon: PlayIcon, visible: true },
+      {
+        name: "Scraper Controls",
+        href: "/scraper",
+        icon: PlayIcon,
+        visible: true,
+      },
       {
         name: "Admin Settings",
         href: "/admin/users",
@@ -82,8 +116,6 @@ export function AppSidebar() {
   const pathname = usePathname();
   const { user } = useAuth();
   const navigation = getNavigation(user?.role);
-  console.log(process.env.NEXT_PUBLIC_FEATURE_INVESTOR_DASHBOARD_ENABLED)
-  console.log("🚀 ~ AppSidebar ~ navigation:", navigation)
 
   return (
     <Sidebar>
@@ -96,12 +128,10 @@ export function AppSidebar() {
           </div>
         </div>
       </SidebarHeader>
-      
+
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>
-            Application
-          </SidebarGroupLabel>
+          <SidebarGroupLabel>Application</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {navigation.map((item) => (
@@ -135,22 +165,8 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      
-      <SidebarFooter>
-        <div className="flex items-center gap-2 p-2">
-          <div className="h-8 w-8 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 flex items-center justify-center">
-            <UserIcon className="h-4 w-4 text-white" />
-          </div>
-          <div className="flex flex-col flex-1">
-            <p className="text-sm font-medium text-sidebar-foreground">
-              {user ? `${user.firstName} ${user.lastName}` : 'Loading...'}
-            </p>
-            <p className="text-xs text-sidebar-foreground/70 capitalize">
-              {user?.role || 'User'}
-            </p>
-          </div>
-        </div>
-      </SidebarFooter>
+
+      <SidebarFooter></SidebarFooter>
     </Sidebar>
-  )
+  );
 }
