@@ -1,114 +1,114 @@
-const sqlite3 = require('sqlite3').verbose();
-const fs = require('fs');
-const path = require('path');
+const sqlite3 = require("sqlite3").verbose();
+const fs = require("fs");
+const path = require("path");
 
 class Database {
-    constructor() {
-        this.db = null;
-        this.init();
+  constructor() {
+    this.db = null;
+    this.init();
+  }
+
+  init() {
+    // Create db directory if it doesn't exist
+    const dbDir = path.join(__dirname);
+    if (!fs.existsSync(dbDir)) {
+      fs.mkdirSync(dbDir, { recursive: true });
     }
 
-    init() {
-        // Create db directory if it doesn't exist
-        const dbDir = path.join(__dirname);
-        if (!fs.existsSync(dbDir)) {
-            fs.mkdirSync(dbDir, { recursive: true });
+    // Connect to SQLite database
+    const dbPath = path.join(__dirname, "properties.db");
+    this.db = new sqlite3.Database(dbPath, (err) => {
+      if (err) {
+        console.error("Error opening database:", err.message);
+        throw err;
+      }
+      console.log("Connected to SQLite database");
+      this.initSchema();
+    });
+
+    // Enable foreign keys
+    this.db.run("PRAGMA foreign_keys = ON");
+  }
+
+  async initSchema() {
+    try {
+      const schemaPath = path.join(__dirname, "schema.sql");
+      const schema = fs.readFileSync(schemaPath, "utf8");
+
+      // Execute the entire schema as one statement
+      await new Promise((resolve, reject) => {
+        this.db.exec(schema, (err) => {
+          if (err) {
+            console.error("Error executing schema:", err.message);
+            reject(err);
+          } else {
+            resolve();
+          }
+        });
+      });
+
+      console.log("Database schema initialized successfully");
+    } catch (error) {
+      console.error("Error initializing database schema:", error.message);
+      throw error;
+    }
+  }
+
+  // Generic query method
+  async query(sql, params = []) {
+    return new Promise((resolve, reject) => {
+      this.db.all(sql, params, (err, rows) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(rows);
         }
+      });
+    });
+  }
 
-        // Connect to SQLite database
-        const dbPath = path.join(__dirname, 'properties.db');
-        this.db = new sqlite3.Database(dbPath, (err) => {
-            if (err) {
-                console.error('Error opening database:', err.message);
-                throw err;
-            }
-            console.log('Connected to SQLite database');
-            this.initSchema();
-        });
-
-        // Enable foreign keys
-        this.db.run('PRAGMA foreign_keys = ON');
-    }
-
-    async initSchema() {
-        try {
-            const schemaPath = path.join(__dirname, 'schema.sql');
-            const schema = fs.readFileSync(schemaPath, 'utf8');
-            
-            // Execute the entire schema as one statement
-            await new Promise((resolve, reject) => {
-                this.db.exec(schema, (err) => {
-                    if (err) {
-                        console.error('Error executing schema:', err.message);
-                        reject(err);
-                    } else {
-                        resolve();
-                    }
-                });
-            });
-            
-            console.log('Database schema initialized successfully');
-        } catch (error) {
-            console.error('Error initializing database schema:', error.message);
-            throw error;
+  // Generic run method for INSERT, UPDATE, DELETE
+  async run(sql, params = []) {
+    return new Promise((resolve, reject) => {
+      this.db.run(sql, params, function (err) {
+        if (err) {
+          reject(err);
+        } else {
+          resolve({ id: this.lastID, changes: this.changes });
         }
-    }
+      });
+    });
+  }
 
-    // Generic query method
-    async query(sql, params = []) {
-        return new Promise((resolve, reject) => {
-            this.db.all(sql, params, (err, rows) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve(rows);
-                }
-            });
-        });
-    }
-
-    // Generic run method for INSERT, UPDATE, DELETE
-    async run(sql, params = []) {
-        return new Promise((resolve, reject) => {
-            this.db.run(sql, params, function(err) {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve({ id: this.lastID, changes: this.changes });
-                }
-            });
-        });
-    }
-
-    // Get a single row
-    async get(sql, params = []) {
-        return new Promise((resolve, reject) => {
-            this.db.get(sql, params, (err, row) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve(row);
-                }
-            });
-        });
-    }
-
-    // Close database connection
-    close() {
-        if (this.db) {
-            this.db.close((err) => {
-                if (err) {
-                    console.error('Error closing database:', err.message);
-                } else {
-                    console.log('Database connection closed');
-                }
-            });
+  // Get a single row
+  async get(sql, params = []) {
+    return new Promise((resolve, reject) => {
+      this.db.get(sql, params, (err, row) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(row);
         }
-    }
+      });
+    });
+  }
 
-    // Property-specific methods
-    async insertProperty(property) {
-        const sql = `
+  // Close database connection
+  close() {
+    if (this.db) {
+      this.db.close((err) => {
+        if (err) {
+          console.error("Error closing database:", err.message);
+        } else {
+          console.log("Database connection closed");
+        }
+      });
+    }
+  }
+
+  // Property-specific methods
+  async insertProperty(property) {
+    const sql = `
             INSERT OR REPLACE INTO properties (
                 external_id, title, description, price, price_currency,
                 property_type, bedrooms, bathrooms, parking_spaces,
@@ -118,156 +118,195 @@ class Database {
                 agent_name, agent_phone, agent_email, listing_date
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
-        
-        const params = [
-            property.external_id, property.title, property.description,
-            property.price, property.price_currency || 'ZAR', property.property_type,
-            property.bedrooms, property.bathrooms, property.parking_spaces,
-            property.floor_area, property.erf_size, property.location_province,
-            property.location_city, property.location_suburb, property.location_address,
-            property.latitude, property.longitude, property.source_website,
-            property.source_url, JSON.stringify(property.images || []),
-            JSON.stringify(property.features || []), property.agent_name,
-            property.agent_phone, property.agent_email, property.listing_date
-        ];
 
-        return await this.run(sql, params);
+    const params = [
+      property.external_id,
+      property.title,
+      property.description,
+      property.price,
+      property.price_currency || "ZAR",
+      property.property_type,
+      property.bedrooms,
+      property.bathrooms,
+      property.parking_spaces,
+      property.floor_area,
+      property.erf_size,
+      property.location_province,
+      property.location_city,
+      property.location_suburb,
+      property.location_address,
+      property.latitude,
+      property.longitude,
+      property.source_website,
+      property.source_url,
+      JSON.stringify(property.images || []),
+      JSON.stringify(property.features || []),
+      property.agent_name,
+      property.agent_phone,
+      property.agent_email,
+      property.listing_date,
+    ];
+
+    return await this.run(sql, params);
+  }
+  /**
+   * Deactivate a property by setting is_active to false
+   * @param {number} propertyId
+   */
+  async deactivateProperty(propertyId) {
+    console.log("Deactivating property:", propertyId);
+    await this.run("UPDATE properties SET is_active = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?", [
+      propertyId,
+    ]);
+  }
+
+  /**
+   * Reactivate a property by setting is_active to true
+   * @param {number} propertyId
+   */
+  async reactivateProperty(propertyId) {
+    console.log("Reactivating property:", propertyId);
+    await this.run("UPDATE properties SET is_active = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?", [
+      propertyId,
+    ]);
+  }
+
+  async getProperties(filters = {}, limit = 50, offset = 0) {
+    let sql = "SELECT * FROM properties WHERE is_active = 1";
+    const params = [];
+
+    // Add filters
+    if (filters.min_price) {
+      sql += " AND price >= ?";
+      params.push(filters.min_price);
+    }
+    if (filters.max_price) {
+      sql += " AND price <= ?";
+      params.push(filters.max_price);
+    }
+    if (filters.bedrooms) {
+      sql += " AND bedrooms >= ?";
+      params.push(filters.bedrooms);
+    }
+    if (filters.bathrooms) {
+      sql += " AND bathrooms >= ?";
+      params.push(filters.bathrooms);
+    }
+    if (filters.property_type) {
+      sql += " AND property_type = ?";
+      params.push(filters.property_type);
+    }
+    if (filters.location_city) {
+      sql += " AND location_city LIKE ?";
+      params.push(`%${filters.location_city}%`);
+    }
+    if (filters.location_suburb) {
+      sql += " AND location_suburb LIKE ?";
+      params.push(`%${filters.location_suburb}%`);
+    }
+    if (filters.source_website) {
+      sql += " AND source_website = ?";
+      params.push(filters.source_website);
+    }
+    if (filters.min_floor_area) {
+      sql += " AND floor_area >= ?";
+      params.push(filters.min_floor_area);
+    }
+    if (filters.max_floor_area) {
+      sql += " AND floor_area <= ?";
+      params.push(filters.max_floor_area);
+    }
+    if (filters.floor_area_range) {
+      if (filters.floor_area_range === "not_listed") {
+        sql += " AND (floor_area IS NULL OR floor_area = 0)";
+      } else if (filters.floor_area_range === "500+") {
+        sql += " AND floor_area >= 500";
+      } else if (filters.floor_area_range.includes("-")) {
+        const [min, max] = filters.floor_area_range.split("-").map(Number);
+        sql += " AND floor_area >= ? AND floor_area <= ?";
+        params.push(min, max);
+      }
+    }
+    sql += " AND is_active = 1";
+
+    sql += " ORDER BY scraped_at DESC LIMIT ? OFFSET ?";
+    params.push(limit, offset);
+
+    return await this.query(sql, params);
+  }
+
+  async getPropertyCount(filters = {}) {
+    let sql = "SELECT COUNT(*) as count FROM properties WHERE is_active = 1";
+    const params = [];
+
+    // Add same filters as getProperties
+    if (filters.min_price) {
+      sql += " AND price >= ?";
+      params.push(filters.min_price);
+    }
+    if (filters.max_price) {
+      sql += " AND price <= ?";
+      params.push(filters.max_price);
+    }
+    if (filters.bedrooms) {
+      sql += " AND bedrooms >= ?";
+      params.push(filters.bedrooms);
+    }
+    if (filters.bathrooms) {
+      sql += " AND bathrooms >= ?";
+      params.push(filters.bathrooms);
+    }
+    if (filters.property_type) {
+      sql += " AND property_type = ?";
+      params.push(filters.property_type);
+    }
+    if (filters.location_city) {
+      sql += " AND location_city LIKE ?";
+      params.push(`%${filters.location_city}%`);
+    }
+    if (filters.location_suburb) {
+      sql += " AND location_suburb LIKE ?";
+      params.push(`%${filters.location_suburb}%`);
+    }
+    if (filters.source_website) {
+      sql += " AND source_website = ?";
+      params.push(filters.source_website);
+    }
+    if (filters.min_floor_area) {
+      sql += " AND floor_area >= ?";
+      params.push(filters.min_floor_area);
+    }
+    if (filters.max_floor_area) {
+      sql += " AND floor_area <= ?";
+      params.push(filters.max_floor_area);
+    }
+    if (filters.floor_area_range) {
+      if (filters.floor_area_range === "not_listed") {
+        sql += " AND (floor_area IS NULL OR floor_area = 0)";
+      } else if (filters.floor_area_range === "500+") {
+        sql += " AND floor_area >= 500";
+      } else if (filters.floor_area_range.includes("-")) {
+        const [min, max] = filters.floor_area_range.split("-").map(Number);
+        sql += " AND floor_area >= ? AND floor_area <= ?";
+        params.push(min, max);
+      }
     }
 
-    async getProperties(filters = {}, limit = 50, offset = 0) {
-        let sql = 'SELECT * FROM properties WHERE is_active = 1';
-        const params = [];
+    const result = await this.get(sql, params);
+    return result.count;
+  }
 
-        // Add filters
-        if (filters.min_price) {
-            sql += ' AND price >= ?';
-            params.push(filters.min_price);
-        }
-        if (filters.max_price) {
-            sql += ' AND price <= ?';
-            params.push(filters.max_price);
-        }
-        if (filters.bedrooms) {
-            sql += ' AND bedrooms >= ?';
-            params.push(filters.bedrooms);
-        }
-        if (filters.bathrooms) {
-            sql += ' AND bathrooms >= ?';
-            params.push(filters.bathrooms);
-        }
-        if (filters.property_type) {
-            sql += ' AND property_type = ?';
-            params.push(filters.property_type);
-        }
-        if (filters.location_city) {
-            sql += ' AND location_city LIKE ?';
-            params.push(`%${filters.location_city}%`);
-        }
-        if (filters.location_suburb) {
-            sql += ' AND location_suburb LIKE ?';
-            params.push(`%${filters.location_suburb}%`);
-        }
-        if (filters.source_website) {
-            sql += ' AND source_website = ?';
-            params.push(filters.source_website);
-        }
-        if (filters.min_floor_area) {
-            sql += ' AND floor_area >= ?';
-            params.push(filters.min_floor_area);
-        }
-        if (filters.max_floor_area) {
-            sql += ' AND floor_area <= ?';
-            params.push(filters.max_floor_area);
-        }
-        if (filters.floor_area_range) {
-            if (filters.floor_area_range === 'not_listed') {
-                sql += ' AND (floor_area IS NULL OR floor_area = 0)';
-            } else if (filters.floor_area_range === '500+') {
-                sql += ' AND floor_area >= 500';
-            } else if (filters.floor_area_range.includes('-')) {
-                const [min, max] = filters.floor_area_range.split('-').map(Number);
-                sql += ' AND floor_area >= ? AND floor_area <= ?';
-                params.push(min, max);
-            }
-        }
-        sql += " AND is_active = 1";
+  async getDashboardStats() {
+    const stats = {};
 
-        sql += ' ORDER BY scraped_at DESC LIMIT ? OFFSET ?';
-        params.push(limit, offset);
+    // Total properties
+    const totalResult = await this.get(
+      "SELECT COUNT(*) as count FROM properties WHERE is_active = 1"
+    );
+    stats.total_properties = totalResult.count;
 
-        return await this.query(sql, params);
-    }
-
-    async getPropertyCount(filters = {}) {
-        let sql = 'SELECT COUNT(*) as count FROM properties WHERE is_active = 1';
-        const params = [];
-
-        // Add same filters as getProperties
-        if (filters.min_price) {
-            sql += ' AND price >= ?';
-            params.push(filters.min_price);
-        }
-        if (filters.max_price) {
-            sql += ' AND price <= ?';
-            params.push(filters.max_price);
-        }
-        if (filters.bedrooms) {
-            sql += ' AND bedrooms >= ?';
-            params.push(filters.bedrooms);
-        }
-        if (filters.bathrooms) {
-            sql += ' AND bathrooms >= ?';
-            params.push(filters.bathrooms);
-        }
-        if (filters.property_type) {
-            sql += ' AND property_type = ?';
-            params.push(filters.property_type);
-        }
-        if (filters.location_city) {
-            sql += ' AND location_city LIKE ?';
-            params.push(`%${filters.location_city}%`);
-        }
-        if (filters.location_suburb) {
-            sql += ' AND location_suburb LIKE ?';
-            params.push(`%${filters.location_suburb}%`);
-        }
-        if (filters.source_website) {
-            sql += ' AND source_website = ?';
-            params.push(filters.source_website);
-        }
-        if (filters.min_floor_area) {
-            sql += ' AND floor_area >= ?';
-            params.push(filters.min_floor_area);
-        }
-        if (filters.max_floor_area) {
-            sql += ' AND floor_area <= ?';
-            params.push(filters.max_floor_area);
-        }
-        if (filters.floor_area_range) {
-            if (filters.floor_area_range === 'not_listed') {
-                sql += ' AND (floor_area IS NULL OR floor_area = 0)';
-            } else if (filters.floor_area_range === '500+') {
-                sql += ' AND floor_area >= 500';
-            } else if (filters.floor_area_range.includes('-')) {
-                const [min, max] = filters.floor_area_range.split('-').map(Number);
-                sql += ' AND floor_area >= ? AND floor_area <= ?';
-                params.push(min, max);
-            }
-        }
-
-        const result = await this.get(sql, params);
-        return result.count;
-    }
-
-    async getDashboardStats() {
-        const stats = {};
-        
-        // Total properties
-        const totalResult = await this.get('SELECT COUNT(*) as count FROM properties WHERE is_active = 1');
-        stats.total_properties = totalResult.count;
-
-        // Price statistics
-        const priceStats = await this.get(`
+    // Price statistics
+    const priceStats = await this.get(`
             SELECT 
                 AVG(price) as avg_price,
                 MIN(price) as min_price,
@@ -275,10 +314,10 @@ class Database {
             FROM properties 
             WHERE is_active = 1 AND price > 0
         `);
-        stats.price_stats = priceStats;
+    stats.price_stats = priceStats;
 
-        // Properties by location (top 10)
-        const locationStats = await this.query(`
+    // Properties by location (top 10)
+    const locationStats = await this.query(`
             SELECT 
                 location_city,
                 COUNT(*) as count,
@@ -289,10 +328,10 @@ class Database {
             ORDER BY count DESC
             LIMIT 10
         `);
-        stats.top_locations = locationStats;
+    stats.top_locations = locationStats;
 
-        // Properties by source
-        const sourceStats = await this.query(`
+    // Properties by source
+    const sourceStats = await this.query(`
             SELECT 
                 source_website,
                 COUNT(*) as count
@@ -300,10 +339,10 @@ class Database {
             WHERE is_active = 1
             GROUP BY source_website
         `);
-        stats.source_distribution = sourceStats;
+    stats.source_distribution = sourceStats;
 
-        // Recent scraping activity (last 7 days)
-        const recentActivity = await this.query(`
+    // Recent scraping activity (last 7 days)
+    const recentActivity = await this.query(`
             SELECT 
                 DATE(scraped_at) as date,
                 COUNT(*) as properties_scraped
@@ -312,81 +351,93 @@ class Database {
             GROUP BY DATE(scraped_at)
             ORDER BY date DESC
         `);
-        stats.recent_activity = recentActivity;
+    stats.recent_activity = recentActivity;
 
-        return stats;
-    }
+    return stats;
+  }
 
-    async insertScrapeJob(job) {
-        const timestamp = new Date().toISOString();
-        const enhancedLogs = [
-            {
-                timestamp,
-                level: 'info',
-                message: 'Scrape job created',
-                details: {
-                    source: job.source_website,
-                    initial_status: job.status
-                }
-            },
-            ...(job.logs || [])
-        ];
+  async insertScrapeJob(job) {
+    const timestamp = new Date().toISOString();
+    const enhancedLogs = [
+      {
+        timestamp,
+        level: "info",
+        message: "Scrape job created",
+        details: {
+          source: job.source_website,
+          initial_status: job.status,
+        },
+      },
+      ...(job.logs || []),
+    ];
 
-        const sql = `
+    const sql = `
             INSERT INTO scrape_jobs (source_website, status, logs)
             VALUES (?, ?, ?)
         `;
-        return await this.run(sql, [job.source_website, job.status, JSON.stringify(enhancedLogs)]);
-    }
+    return await this.run(sql, [
+      job.source_website,
+      job.status,
+      JSON.stringify(enhancedLogs),
+    ]);
+  }
 
-    async updateScrapeJob(id, updates) {
-        const timestamp = new Date().toISOString();
-        const fields = [];
-        const params = [];
+  async updateScrapeJob(id, updates) {
+    const timestamp = new Date().toISOString();
+    const fields = [];
+    const params = [];
 
-        Object.keys(updates).forEach(key => {
-            if (key === 'logs') {
-                fields.push(`${key} = ?`);
-                params.push(JSON.stringify([
-                    {
-                        timestamp,
-                        level: 'info',
-                        message: 'Job updated',
-                        details: updates
-                    },
-                    ...updates[key]
-                ]));
-            } else {
-                fields.push(`${key} = ?`);
-                params.push(updates[key]);
-            }
-        });
+    Object.keys(updates).forEach((key) => {
+      if (key === "logs") {
+        fields.push(`${key} = ?`);
+        params.push(
+          JSON.stringify([
+            {
+              timestamp,
+              level: "info",
+              message: "Job updated",
+              details: updates,
+            },
+            ...updates[key],
+          ])
+        );
+      } else {
+        fields.push(`${key} = ?`);
+        params.push(updates[key]);
+      }
+    });
 
-        params.push(id);
-        const sql = `UPDATE scrape_jobs SET ${fields.join(', ')} WHERE id = ?`;
-        return await this.run(sql, params);
-    }
+    params.push(id);
+    const sql = `UPDATE scrape_jobs SET ${fields.join(", ")} WHERE id = ?`;
+    return await this.run(sql, params);
+  }
 
-    async getRecentScrapeJobs(limit = 20) {
-        return await this.query(`
+  async getRecentScrapeJobs(limit = 20) {
+    return await this.query(
+      `
             SELECT * FROM scrape_jobs 
             ORDER BY started_at DESC 
             LIMIT ?
-        `, [limit]);
-    }
+        `,
+      [limit]
+    );
+  }
 
-    // Price history methods
-    async getPriceHistory(propertyId, limit = 100) {
-        return await this.query(`
+  // Price history methods
+  async getPriceHistory(propertyId, limit = 100) {
+    return await this.query(
+      `
             SELECT * FROM price_history 
             WHERE property_id = ?
             ORDER BY recorded_at DESC
             LIMIT ?
-        `, [propertyId, limit]);
-    }
+        `,
+      [propertyId, limit]
+    );
+  }
 
-    async getAggregatedPriceHistory(filters = {}, days = 30) {
-        let sql = `
+  async getAggregatedPriceHistory(filters = {}, days = 30) {
+    let sql = `
             SELECT 
                 DATE(ph.recorded_at) as date,
                 AVG(ph.price) as avg_price,
@@ -399,32 +450,32 @@ class Database {
             WHERE ph.recorded_at >= datetime('now', '-' || ? || ' days')
             AND p.is_active = 1
         `;
-        const params = [days];
+    const params = [days];
 
-        // Add filters
-        if (filters.location_city) {
-            sql += ' AND p.location_city = ?';
-            params.push(filters.location_city);
-        }
-        if (filters.property_type) {
-            sql += ' AND p.property_type = ?';
-            params.push(filters.property_type);
-        }
-        if (filters.source_website) {
-            sql += ' AND p.source_website = ?';
-            params.push(filters.source_website);
-        }
+    // Add filters
+    if (filters.location_city) {
+      sql += " AND p.location_city = ?";
+      params.push(filters.location_city);
+    }
+    if (filters.property_type) {
+      sql += " AND p.property_type = ?";
+      params.push(filters.property_type);
+    }
+    if (filters.source_website) {
+      sql += " AND p.source_website = ?";
+      params.push(filters.source_website);
+    }
 
-        sql += `
+    sql += `
             GROUP BY DATE(ph.recorded_at)
             ORDER BY date DESC
         `;
 
-        return await this.query(sql, params);
-    }
+    return await this.query(sql, params);
+  }
 
-    async getPriceDistribution(filters = {}) {
-        let sql = `
+  async getPriceDistribution(filters = {}) {
+    let sql = `
             SELECT 
                 CASE 
                     WHEN price < 500000 THEN 'Under R500k'
@@ -438,36 +489,39 @@ class Database {
             FROM properties 
             WHERE is_active = 1 AND price IS NOT NULL
         `;
-        const params = [];
+    const params = [];
 
-        if (filters.location_city) {
-            sql += ' AND location_city = ?';
-            params.push(filters.location_city);
-        }
-        if (filters.property_type) {
-            sql += ' AND property_type = ?';
-            params.push(filters.property_type);
-        }
+    if (filters.location_city) {
+      sql += " AND location_city = ?";
+      params.push(filters.location_city);
+    }
+    if (filters.property_type) {
+      sql += " AND property_type = ?";
+      params.push(filters.property_type);
+    }
 
-        sql += `
+    sql += `
             GROUP BY price_range
             ORDER BY avg_price ASC
         `;
 
-        return await this.query(sql, params);
-    }
+    return await this.query(sql, params);
+  }
 
-    // Property lifecycle methods
-    async getPropertyLifecycle(propertyId) {
-        return await this.query(`
+  // Property lifecycle methods
+  async getPropertyLifecycle(propertyId) {
+    return await this.query(
+      `
             SELECT * FROM property_lifecycle 
             WHERE property_id = ?
             ORDER BY event_date DESC
-        `, [propertyId]);
-    }
+        `,
+      [propertyId]
+    );
+  }
 
-    async getTimeOnMarketStats(filters = {}) {
-        let sql = `
+  async getTimeOnMarketStats(filters = {}) {
+    let sql = `
             SELECT 
                 p.id,
                 p.title,
@@ -498,33 +552,34 @@ class Database {
             ) pl_latest ON p.id = pl_latest.property_id
             WHERE p.is_active = 1
         `;
-        const params = [];
+    const params = [];
 
-        if (filters.location_city) {
-            sql += ' AND p.location_city = ?';
-            params.push(filters.location_city);
-        }
-        if (filters.min_days) {
-            sql += ' AND days_on_market >= ?';
-            params.push(filters.min_days);
-        }
-        if (filters.max_days) {
-            sql += ' AND days_on_market <= ?';
-            params.push(filters.max_days);
-        }
-
-        sql += ' ORDER BY days_on_market DESC';
-
-        if (filters.limit) {
-            sql += ' LIMIT ?';
-            params.push(filters.limit);
-        }
-
-        return await this.query(sql, params);
+    if (filters.location_city) {
+      sql += " AND p.location_city = ?";
+      params.push(filters.location_city);
+    }
+    if (filters.min_days) {
+      sql += " AND days_on_market >= ?";
+      params.push(filters.min_days);
+    }
+    if (filters.max_days) {
+      sql += " AND days_on_market <= ?";
+      params.push(filters.max_days);
     }
 
-    async getMarketTrends(days = 30) {
-        return await this.query(`
+    sql += " ORDER BY days_on_market DESC";
+
+    if (filters.limit) {
+      sql += " LIMIT ?";
+      params.push(filters.limit);
+    }
+
+    return await this.query(sql, params);
+  }
+
+  async getMarketTrends(days = 30) {
+    return await this.query(
+      `
             SELECT 
                 DATE(recorded_at) as date,
                 COUNT(CASE WHEN change_type = 'increase' THEN 1 END) as price_increases,
@@ -537,13 +592,15 @@ class Database {
             AND change_type IN ('increase', 'decrease')
             GROUP BY DATE(recorded_at)
             ORDER BY date DESC
-        `, [days]);
-    }
+        `,
+      [days]
+    );
+  }
 
-    // RENTAL PROPERTIES METHODS
+  // RENTAL PROPERTIES METHODS
 
-    async insertRentalProperty(property) {
-        const sql = `
+  async insertRentalProperty(property) {
+    const sql = `
             INSERT OR REPLACE INTO rental_properties (
                 external_id, title, description, rental_price, rental_period,
                 deposit, lease_terms, available_date, furnished_status, utilities_included, pet_policy,
@@ -554,180 +611,206 @@ class Database {
                 agent_name, agent_phone, agent_email, listing_date
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
-        
-        const params = [
-            property.external_id, property.title, property.description,
-            property.rental_price, property.rental_period || 'monthly',
-            property.deposit, property.lease_terms, property.available_date,
-            property.furnished_status, JSON.stringify(property.utilities_included || []),
-            property.pet_policy, property.property_type,
-            property.bedrooms, property.bathrooms, property.parking_spaces,
-            property.floor_area, property.erf_size, property.location_province,
-            property.location_city, property.location_suburb, property.location_address,
-            property.latitude, property.longitude, property.source_website,
-            property.source_url, JSON.stringify(property.images || []),
-            JSON.stringify(property.features || []), property.agent_name,
-            property.agent_phone, property.agent_email, property.listing_date
-        ];
 
-        return await this.run(sql, params);
+    const params = [
+      property.external_id,
+      property.title,
+      property.description,
+      property.rental_price,
+      property.rental_period || "monthly",
+      property.deposit,
+      property.lease_terms,
+      property.available_date,
+      property.furnished_status,
+      JSON.stringify(property.utilities_included || []),
+      property.pet_policy,
+      property.property_type,
+      property.bedrooms,
+      property.bathrooms,
+      property.parking_spaces,
+      property.floor_area,
+      property.erf_size,
+      property.location_province,
+      property.location_city,
+      property.location_suburb,
+      property.location_address,
+      property.latitude,
+      property.longitude,
+      property.source_website,
+      property.source_url,
+      JSON.stringify(property.images || []),
+      JSON.stringify(property.features || []),
+      property.agent_name,
+      property.agent_phone,
+      property.agent_email,
+      property.listing_date,
+    ];
+
+    return await this.run(sql, params);
+  }
+
+  async getRentalProperties(filters = {}, limit = 50, offset = 0) {
+    let sql = "SELECT * FROM rental_properties WHERE is_active = 1";
+    const params = [];
+
+    // Add filters
+    if (filters.min_rental_price) {
+      sql += " AND rental_price >= ?";
+      params.push(filters.min_rental_price);
+    }
+    if (filters.max_rental_price) {
+      sql += " AND rental_price <= ?";
+      params.push(filters.max_rental_price);
+    }
+    if (filters.bedrooms) {
+      sql += " AND bedrooms >= ?";
+      params.push(filters.bedrooms);
+    }
+    if (filters.bathrooms) {
+      sql += " AND bathrooms >= ?";
+      params.push(filters.bathrooms);
+    }
+    if (filters.property_type) {
+      sql += " AND property_type = ?";
+      params.push(filters.property_type);
+    }
+    if (filters.location_city) {
+      sql += " AND location_city LIKE ?";
+      params.push(`%${filters.location_city}%`);
+    }
+    if (filters.location_suburb) {
+      sql += " AND location_suburb LIKE ?";
+      params.push(`%${filters.location_suburb}%`);
+    }
+    if (filters.furnished_status) {
+      sql += " AND furnished_status = ?";
+      params.push(filters.furnished_status);
+    }
+    if (filters.pet_policy) {
+      sql += " AND pet_policy = ?";
+      params.push(filters.pet_policy);
+    }
+    if (filters.available_from) {
+      sql += " AND (available_date IS NULL OR available_date <= ?)";
+      params.push(filters.available_from);
+    }
+    if (filters.source_website) {
+      sql += " AND source_website = ?";
+      params.push(filters.source_website);
     }
 
-    async getRentalProperties(filters = {}, limit = 50, offset = 0) {
-        let sql = 'SELECT * FROM rental_properties WHERE is_active = 1';
-        const params = [];
+    sql += " ORDER BY scraped_at DESC LIMIT ? OFFSET ?";
+    params.push(limit, offset);
 
-        // Add filters
-        if (filters.min_rental_price) {
-            sql += ' AND rental_price >= ?';
-            params.push(filters.min_rental_price);
-        }
-        if (filters.max_rental_price) {
-            sql += ' AND rental_price <= ?';
-            params.push(filters.max_rental_price);
-        }
-        if (filters.bedrooms) {
-            sql += ' AND bedrooms >= ?';
-            params.push(filters.bedrooms);
-        }
-        if (filters.bathrooms) {
-            sql += ' AND bathrooms >= ?';
-            params.push(filters.bathrooms);
-        }
-        if (filters.property_type) {
-            sql += ' AND property_type = ?';
-            params.push(filters.property_type);
-        }
-        if (filters.location_city) {
-            sql += ' AND location_city LIKE ?';
-            params.push(`%${filters.location_city}%`);
-        }
-        if (filters.location_suburb) {
-            sql += ' AND location_suburb LIKE ?';
-            params.push(`%${filters.location_suburb}%`);
-        }
-        if (filters.furnished_status) {
-            sql += ' AND furnished_status = ?';
-            params.push(filters.furnished_status);
-        }
-        if (filters.pet_policy) {
-            sql += ' AND pet_policy = ?';
-            params.push(filters.pet_policy);
-        }
-        if (filters.available_from) {
-            sql += ' AND (available_date IS NULL OR available_date <= ?)';
-            params.push(filters.available_from);
-        }
-        if (filters.source_website) {
-            sql += ' AND source_website = ?';
-            params.push(filters.source_website);
-        }
+    return await this.query(sql, params);
+  }
 
-        sql += ' ORDER BY scraped_at DESC LIMIT ? OFFSET ?';
-        params.push(limit, offset);
+  async getRentalPropertyCount(filters = {}) {
+    let sql =
+      "SELECT COUNT(*) as count FROM rental_properties WHERE is_active = 1";
+    const params = [];
 
-        return await this.query(sql, params);
+    // Add same filters as getRentalProperties
+    if (filters.min_rental_price) {
+      sql += " AND rental_price >= ?";
+      params.push(filters.min_rental_price);
+    }
+    if (filters.max_rental_price) {
+      sql += " AND rental_price <= ?";
+      params.push(filters.max_rental_price);
+    }
+    if (filters.bedrooms) {
+      sql += " AND bedrooms >= ?";
+      params.push(filters.bedrooms);
+    }
+    if (filters.bathrooms) {
+      sql += " AND bathrooms >= ?";
+      params.push(filters.bathrooms);
+    }
+    if (filters.property_type) {
+      sql += " AND property_type = ?";
+      params.push(filters.property_type);
+    }
+    if (filters.location_city) {
+      sql += " AND location_city LIKE ?";
+      params.push(`%${filters.location_city}%`);
+    }
+    if (filters.location_suburb) {
+      sql += " AND location_suburb LIKE ?";
+      params.push(`%${filters.location_suburb}%`);
+    }
+    if (filters.furnished_status) {
+      sql += " AND furnished_status = ?";
+      params.push(filters.furnished_status);
+    }
+    if (filters.pet_policy) {
+      sql += " AND pet_policy = ?";
+      params.push(filters.pet_policy);
+    }
+    if (filters.available_from) {
+      sql += " AND (available_date IS NULL OR available_date <= ?)";
+      params.push(filters.available_from);
+    }
+    if (filters.source_website) {
+      sql += " AND source_website = ?";
+      params.push(filters.source_website);
     }
 
-    async getRentalPropertyCount(filters = {}) {
-        let sql = 'SELECT COUNT(*) as count FROM rental_properties WHERE is_active = 1';
-        const params = [];
+    const result = await this.get(sql, params);
+    return result.count;
+  }
 
-        // Add same filters as getRentalProperties
-        if (filters.min_rental_price) {
-            sql += ' AND rental_price >= ?';
-            params.push(filters.min_rental_price);
-        }
-        if (filters.max_rental_price) {
-            sql += ' AND rental_price <= ?';
-            params.push(filters.max_rental_price);
-        }
-        if (filters.bedrooms) {
-            sql += ' AND bedrooms >= ?';
-            params.push(filters.bedrooms);
-        }
-        if (filters.bathrooms) {
-            sql += ' AND bathrooms >= ?';
-            params.push(filters.bathrooms);
-        }
-        if (filters.property_type) {
-            sql += ' AND property_type = ?';
-            params.push(filters.property_type);
-        }
-        if (filters.location_city) {
-            sql += ' AND location_city LIKE ?';
-            params.push(`%${filters.location_city}%`);
-        }
-        if (filters.location_suburb) {
-            sql += ' AND location_suburb LIKE ?';
-            params.push(`%${filters.location_suburb}%`);
-        }
-        if (filters.furnished_status) {
-            sql += ' AND furnished_status = ?';
-            params.push(filters.furnished_status);
-        }
-        if (filters.pet_policy) {
-            sql += ' AND pet_policy = ?';
-            params.push(filters.pet_policy);
-        }
-        if (filters.available_from) {
-            sql += ' AND (available_date IS NULL OR available_date <= ?)';
-            params.push(filters.available_from);
-        }
-        if (filters.source_website) {
-            sql += ' AND source_website = ?';
-            params.push(filters.source_website);
-        }
+  // PROPERTY EXPENSES METHODS
 
-        const result = await this.get(sql, params);
-        return result.count;
-    }
-
-    // PROPERTY EXPENSES METHODS
-
-    async insertPropertyExpenses(expenses) {
-        const sql = `
+  async insertPropertyExpenses(expenses) {
+    const sql = `
             INSERT OR REPLACE INTO property_expenses (
                 property_id, property_table, municipal_rates, body_corporate_levies,
                 insurance_estimate, maintenance_reserve, municipal_taxes, property_tax,
                 transfer_costs, bond_costs, data_source
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
-        
-        const params = [
-            expenses.property_id, expenses.property_table,
-            expenses.municipal_rates, expenses.body_corporate_levies,
-            expenses.insurance_estimate, expenses.maintenance_reserve,
-            expenses.municipal_taxes, expenses.property_tax,
-            expenses.transfer_costs, expenses.bond_costs,
-            expenses.data_source || 'scraped'
-        ];
 
-        return await this.run(sql, params);
+    const params = [
+      expenses.property_id,
+      expenses.property_table,
+      expenses.municipal_rates,
+      expenses.body_corporate_levies,
+      expenses.insurance_estimate,
+      expenses.maintenance_reserve,
+      expenses.municipal_taxes,
+      expenses.property_tax,
+      expenses.transfer_costs,
+      expenses.bond_costs,
+      expenses.data_source || "scraped",
+    ];
+
+    return await this.run(sql, params);
+  }
+
+  async getPropertyExpenses(propertyId, propertyTable) {
+    return await this.get(
+      "SELECT * FROM property_expenses WHERE property_id = ? AND property_table = ? ORDER BY scraped_at DESC LIMIT 1",
+      [propertyId, propertyTable]
+    );
+  }
+
+  // RENTAL YIELD ANALYSIS METHODS
+
+  async calculateRentalYield(salePropertyId) {
+    // Get the sale property
+    const saleProperty = await this.get(
+      "SELECT * FROM properties WHERE id = ? AND is_active = 1",
+      [salePropertyId]
+    );
+
+    if (!saleProperty) {
+      throw new Error("Sale property not found");
     }
 
-    async getPropertyExpenses(propertyId, propertyTable) {
-        return await this.get(
-            'SELECT * FROM property_expenses WHERE property_id = ? AND property_table = ? ORDER BY scraped_at DESC LIMIT 1',
-            [propertyId, propertyTable]
-        );
-    }
-
-    // RENTAL YIELD ANALYSIS METHODS
-
-    async calculateRentalYield(salePropertyId) {
-        // Get the sale property
-        const saleProperty = await this.get(
-            'SELECT * FROM properties WHERE id = ? AND is_active = 1',
-            [salePropertyId]
-        );
-        
-        if (!saleProperty) {
-            throw new Error('Sale property not found');
-        }
-
-        // Get comparable rental properties in the same area
-        const comparableRentals = await this.query(`
+    // Get comparable rental properties in the same area
+    const comparableRentals = await this.query(
+      `
             SELECT rental_price, bedrooms, bathrooms, property_type, floor_area
             FROM rental_properties 
             WHERE is_active = 1
@@ -736,84 +819,102 @@ class Database {
             AND property_type = ?
             AND bedrooms >= ? AND bedrooms <= ?
             AND rental_period = 'monthly'
-        `, [
-            saleProperty.location_city,
-            saleProperty.location_suburb,
-            saleProperty.property_type,
-            Math.max(1, saleProperty.bedrooms - 1),
-            saleProperty.bedrooms + 1
-        ]);
+        `,
+      [
+        saleProperty.location_city,
+        saleProperty.location_suburb,
+        saleProperty.property_type,
+        Math.max(1, saleProperty.bedrooms - 1),
+        saleProperty.bedrooms + 1,
+      ]
+    );
 
-        if (comparableRentals.length === 0) {
-            return null; // No comparable rentals found
-        }
+    if (comparableRentals.length === 0) {
+      return null; // No comparable rentals found
+    }
 
-        // Calculate average rental
-        const avgRental = comparableRentals.reduce((sum, r) => sum + r.rental_price, 0) / comparableRentals.length;
-        const estimatedMonthlyRental = avgRental;
-        const annualRental = estimatedMonthlyRental * 12;
+    // Calculate average rental
+    const avgRental =
+      comparableRentals.reduce((sum, r) => sum + r.rental_price, 0) /
+      comparableRentals.length;
+    const estimatedMonthlyRental = avgRental;
+    const annualRental = estimatedMonthlyRental * 12;
 
-        // Get property expenses
-        const expenses = await this.getPropertyExpenses(salePropertyId, 'properties');
-        const monthlyExpenses = (
-            (expenses?.municipal_rates || 0) +
-            (expenses?.body_corporate_levies || 0) +
-            (expenses?.insurance_estimate || 0) +
-            (expenses?.maintenance_reserve || 0)
-        );
-        const annualExpenses = (monthlyExpenses * 12) + (expenses?.municipal_taxes || 0) + (expenses?.property_tax || 0);
+    // Get property expenses
+    const expenses = await this.getPropertyExpenses(
+      salePropertyId,
+      "properties"
+    );
+    const monthlyExpenses =
+      (expenses?.municipal_rates || 0) +
+      (expenses?.body_corporate_levies || 0) +
+      (expenses?.insurance_estimate || 0) +
+      (expenses?.maintenance_reserve || 0);
+    const annualExpenses =
+      monthlyExpenses * 12 +
+      (expenses?.municipal_taxes || 0) +
+      (expenses?.property_tax || 0);
 
-        // Calculate yields
-        const grossRentalYield = (annualRental / saleProperty.price) * 100;
-        const netRentalYield = ((annualRental - annualExpenses) / saleProperty.price) * 100;
-        const netMonthlyCashFlow = estimatedMonthlyRental - monthlyExpenses;
-        const breakEvenRental = monthlyExpenses;
+    // Calculate yields
+    const grossRentalYield = (annualRental / saleProperty.price) * 100;
+    const netRentalYield =
+      ((annualRental - annualExpenses) / saleProperty.price) * 100;
+    const netMonthlyCashFlow = estimatedMonthlyRental - monthlyExpenses;
+    const breakEvenRental = monthlyExpenses;
 
-        // Insert analysis
-        const analysisData = {
-            sale_property_id: salePropertyId,
-            area_avg_rental: avgRental,
-            comparable_rental_count: comparableRentals.length,
-            estimated_monthly_rental: estimatedMonthlyRental,
-            gross_rental_yield: grossRentalYield,
-            net_rental_yield: netRentalYield,
-            total_monthly_expenses: monthlyExpenses,
-            net_monthly_cash_flow: netMonthlyCashFlow,
-            break_even_rental: breakEvenRental,
-            calculation_method: 'comparable_rentals',
-            confidence_score: Math.min(1.0, comparableRentals.length / 5) // Higher confidence with more comparables
-        };
+    // Insert analysis
+    const analysisData = {
+      sale_property_id: salePropertyId,
+      area_avg_rental: avgRental,
+      comparable_rental_count: comparableRentals.length,
+      estimated_monthly_rental: estimatedMonthlyRental,
+      gross_rental_yield: grossRentalYield,
+      net_rental_yield: netRentalYield,
+      total_monthly_expenses: monthlyExpenses,
+      net_monthly_cash_flow: netMonthlyCashFlow,
+      break_even_rental: breakEvenRental,
+      calculation_method: "comparable_rentals",
+      confidence_score: Math.min(1.0, comparableRentals.length / 5), // Higher confidence with more comparables
+    };
 
-        const sql = `
+    const sql = `
             INSERT OR REPLACE INTO rental_yield_analysis (
                 sale_property_id, area_avg_rental, comparable_rental_count, estimated_monthly_rental,
                 gross_rental_yield, net_rental_yield, total_monthly_expenses, net_monthly_cash_flow,
                 break_even_rental, calculation_method, confidence_score
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
-        
-        const params = [
-            analysisData.sale_property_id, analysisData.area_avg_rental, analysisData.comparable_rental_count,
-            analysisData.estimated_monthly_rental, analysisData.gross_rental_yield, analysisData.net_rental_yield,
-            analysisData.total_monthly_expenses, analysisData.net_monthly_cash_flow, analysisData.break_even_rental,
-            analysisData.calculation_method, analysisData.confidence_score
-        ];
 
-        await this.run(sql, params);
-        return analysisData;
-    }
+    const params = [
+      analysisData.sale_property_id,
+      analysisData.area_avg_rental,
+      analysisData.comparable_rental_count,
+      analysisData.estimated_monthly_rental,
+      analysisData.gross_rental_yield,
+      analysisData.net_rental_yield,
+      analysisData.total_monthly_expenses,
+      analysisData.net_monthly_cash_flow,
+      analysisData.break_even_rental,
+      analysisData.calculation_method,
+      analysisData.confidence_score,
+    ];
 
-    async getRentalYieldAnalysis(salePropertyId) {
-        return await this.get(
-            'SELECT * FROM rental_yield_analysis WHERE sale_property_id = ? ORDER BY analysis_date DESC LIMIT 1',
-            [salePropertyId]
-        );
-    }
+    await this.run(sql, params);
+    return analysisData;
+  }
 
-    // MARKET ANALYSIS METHODS
+  async getRentalYieldAnalysis(salePropertyId) {
+    return await this.get(
+      "SELECT * FROM rental_yield_analysis WHERE sale_property_id = ? ORDER BY analysis_date DESC LIMIT 1",
+      [salePropertyId]
+    );
+  }
 
-    async getMarketAnalysis(location = {}, propertyType = null) {
-        return await this.get(`
+  // MARKET ANALYSIS METHODS
+
+  async getMarketAnalysis(location = {}, propertyType = null) {
+    return await this.get(
+      `
             SELECT * FROM market_analysis 
             WHERE location_province = ? 
             AND location_city = ?
@@ -821,17 +922,15 @@ class Database {
             AND (property_type = ? OR property_type IS NULL)
             ORDER BY calculated_at DESC 
             LIMIT 1
-        `, [
-            location.province,
-            location.city,
-            location.suburb || null,
-            propertyType
-        ]);
-    }
+        `,
+      [location.province, location.city, location.suburb || null, propertyType]
+    );
+  }
 
-    async calculateMarketAnalysis(location = {}, propertyType = null) {
-        // Calculate sale market metrics
-        const saleMetrics = await this.get(`
+  async calculateMarketAnalysis(location = {}, propertyType = null) {
+    // Calculate sale market metrics
+    const saleMetrics = await this.get(
+      `
             SELECT 
                 AVG(price) as avg_sale_price,
                 COUNT(*) as total_sale_listings,
@@ -847,17 +946,20 @@ class Database {
             WHERE is_active = 1
             AND location_province = ?
             AND location_city = ?
-            ${location.suburb ? 'AND location_suburb = ?' : ''}
-            ${propertyType ? 'AND property_type = ?' : ''}
-        `, [
-            location.province,
-            location.city,
-            ...(location.suburb ? [location.suburb] : []),
-            ...(propertyType ? [propertyType] : [])
-        ]);
+            ${location.suburb ? "AND location_suburb = ?" : ""}
+            ${propertyType ? "AND property_type = ?" : ""}
+        `,
+      [
+        location.province,
+        location.city,
+        ...(location.suburb ? [location.suburb] : []),
+        ...(propertyType ? [propertyType] : []),
+      ]
+    );
 
-        // Calculate rental market metrics
-        const rentalMetrics = await this.get(`
+    // Calculate rental market metrics
+    const rentalMetrics = await this.get(
+      `
             SELECT 
                 AVG(rental_price) as avg_rental_price,
                 COUNT(*) as total_rental_listings,
@@ -873,53 +975,63 @@ class Database {
             WHERE is_active = 1
             AND location_province = ?
             AND location_city = ?
-            ${location.suburb ? 'AND location_suburb = ?' : ''}
-            ${propertyType ? 'AND property_type = ?' : ''}
-        `, [
-            location.province,
-            location.city,
-            ...(location.suburb ? [location.suburb] : []),
-            ...(propertyType ? [propertyType] : [])
-        ]);
+            ${location.suburb ? "AND location_suburb = ?" : ""}
+            ${propertyType ? "AND property_type = ?" : ""}
+        `,
+      [
+        location.province,
+        location.city,
+        ...(location.suburb ? [location.suburb] : []),
+        ...(propertyType ? [propertyType] : []),
+      ]
+    );
 
-        // Calculate investment metrics
-        let avgPriceToRentRatio = null;
-        let avgGrossYield = null;
-        
-        if (saleMetrics.avg_sale_price && rentalMetrics.avg_rental_price) {
-            avgPriceToRentRatio = saleMetrics.avg_sale_price / (rentalMetrics.avg_rental_price * 12);
-            avgGrossYield = (rentalMetrics.avg_rental_price * 12 / saleMetrics.avg_sale_price) * 100;
-        }
+    // Calculate investment metrics
+    let avgPriceToRentRatio = null;
+    let avgGrossYield = null;
 
-        // Determine market temperature based on days on market
-        let marketTemperature = 'cool';
-        const avgDaysOnMarket = (saleMetrics.avg_days_on_market_sale + rentalMetrics.avg_days_on_market_rental) / 2;
-        if (avgDaysOnMarket < 30) marketTemperature = 'hot';
-        else if (avgDaysOnMarket < 60) marketTemperature = 'warm';
-        else if (avgDaysOnMarket > 120) marketTemperature = 'cold';
+    if (saleMetrics.avg_sale_price && rentalMetrics.avg_rental_price) {
+      avgPriceToRentRatio =
+        saleMetrics.avg_sale_price / (rentalMetrics.avg_rental_price * 12);
+      avgGrossYield =
+        ((rentalMetrics.avg_rental_price * 12) / saleMetrics.avg_sale_price) *
+        100;
+    }
 
-        const marketAnalysis = {
-            location_province: location.province,
-            location_city: location.city,
-            location_suburb: location.suburb || null,
-            property_type: propertyType,
-            avg_sale_price: saleMetrics.avg_sale_price,
-            median_sale_price: saleMetrics.avg_sale_price, // Simplified - could calculate actual median
-            avg_days_on_market_sale: saleMetrics.avg_days_on_market_sale,
-            total_sale_listings: saleMetrics.total_sale_listings,
-            avg_rental_price: rentalMetrics.avg_rental_price,
-            median_rental_price: rentalMetrics.avg_rental_price, // Simplified
-            avg_days_on_market_rental: rentalMetrics.avg_days_on_market_rental,
-            total_rental_listings: rentalMetrics.total_rental_listings,
-            avg_price_to_rent_ratio: avgPriceToRentRatio,
-            avg_gross_yield: avgGrossYield,
-            market_temperature: marketTemperature,
-            analysis_period_start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-            analysis_period_end: new Date().toISOString().split('T')[0]
-        };
+    // Determine market temperature based on days on market
+    let marketTemperature = "cool";
+    const avgDaysOnMarket =
+      (saleMetrics.avg_days_on_market_sale +
+        rentalMetrics.avg_days_on_market_rental) /
+      2;
+    if (avgDaysOnMarket < 30) marketTemperature = "hot";
+    else if (avgDaysOnMarket < 60) marketTemperature = "warm";
+    else if (avgDaysOnMarket > 120) marketTemperature = "cold";
 
-        // Insert into database
-        const sql = `
+    const marketAnalysis = {
+      location_province: location.province,
+      location_city: location.city,
+      location_suburb: location.suburb || null,
+      property_type: propertyType,
+      avg_sale_price: saleMetrics.avg_sale_price,
+      median_sale_price: saleMetrics.avg_sale_price, // Simplified - could calculate actual median
+      avg_days_on_market_sale: saleMetrics.avg_days_on_market_sale,
+      total_sale_listings: saleMetrics.total_sale_listings,
+      avg_rental_price: rentalMetrics.avg_rental_price,
+      median_rental_price: rentalMetrics.avg_rental_price, // Simplified
+      avg_days_on_market_rental: rentalMetrics.avg_days_on_market_rental,
+      total_rental_listings: rentalMetrics.total_rental_listings,
+      avg_price_to_rent_ratio: avgPriceToRentRatio,
+      avg_gross_yield: avgGrossYield,
+      market_temperature: marketTemperature,
+      analysis_period_start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .split("T")[0],
+      analysis_period_end: new Date().toISOString().split("T")[0],
+    };
+
+    // Insert into database
+    const sql = `
             INSERT OR REPLACE INTO market_analysis (
                 location_province, location_city, location_suburb, property_type,
                 avg_sale_price, median_sale_price, avg_days_on_market_sale, total_sale_listings,
@@ -928,31 +1040,42 @@ class Database {
                 analysis_period_start, analysis_period_end
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
-        
-        const params = [
-            marketAnalysis.location_province, marketAnalysis.location_city, marketAnalysis.location_suburb,
-            marketAnalysis.property_type, marketAnalysis.avg_sale_price, marketAnalysis.median_sale_price,
-            marketAnalysis.avg_days_on_market_sale, marketAnalysis.total_sale_listings,
-            marketAnalysis.avg_rental_price, marketAnalysis.median_rental_price,
-            marketAnalysis.avg_days_on_market_rental, marketAnalysis.total_rental_listings,
-            marketAnalysis.avg_price_to_rent_ratio, marketAnalysis.avg_gross_yield,
-            marketAnalysis.market_temperature, marketAnalysis.analysis_period_start,
-            marketAnalysis.analysis_period_end
-        ];
 
-        await this.run(sql, params);
-        return marketAnalysis;
-    }
+    const params = [
+      marketAnalysis.location_province,
+      marketAnalysis.location_city,
+      marketAnalysis.location_suburb,
+      marketAnalysis.property_type,
+      marketAnalysis.avg_sale_price,
+      marketAnalysis.median_sale_price,
+      marketAnalysis.avg_days_on_market_sale,
+      marketAnalysis.total_sale_listings,
+      marketAnalysis.avg_rental_price,
+      marketAnalysis.median_rental_price,
+      marketAnalysis.avg_days_on_market_rental,
+      marketAnalysis.total_rental_listings,
+      marketAnalysis.avg_price_to_rent_ratio,
+      marketAnalysis.avg_gross_yield,
+      marketAnalysis.market_temperature,
+      marketAnalysis.analysis_period_start,
+      marketAnalysis.analysis_period_end,
+    ];
 
-    async getRentalMarketStats(filters = {}) {
-        const stats = {};
-        
-        // Total rental properties
-        const totalResult = await this.get('SELECT COUNT(*) as count FROM rental_properties WHERE is_active = 1');
-        stats.total_rental_properties = totalResult.count;
+    await this.run(sql, params);
+    return marketAnalysis;
+  }
 
-        // Rental price statistics
-        const rentalStats = await this.get(`
+  async getRentalMarketStats(filters = {}) {
+    const stats = {};
+
+    // Total rental properties
+    const totalResult = await this.get(
+      "SELECT COUNT(*) as count FROM rental_properties WHERE is_active = 1"
+    );
+    stats.total_rental_properties = totalResult.count;
+
+    // Rental price statistics
+    const rentalStats = await this.get(`
             SELECT 
                 AVG(rental_price) as avg_rental_price,
                 MIN(rental_price) as min_rental_price,
@@ -960,10 +1083,10 @@ class Database {
             FROM rental_properties 
             WHERE is_active = 1 AND rental_price > 0
         `);
-        stats.rental_price_stats = rentalStats;
+    stats.rental_price_stats = rentalStats;
 
-        // Rental properties by location (top 10)
-        const locationStats = await this.query(`
+    // Rental properties by location (top 10)
+    const locationStats = await this.query(`
             SELECT 
                 location_city,
                 COUNT(*) as count,
@@ -974,10 +1097,10 @@ class Database {
             ORDER BY count DESC
             LIMIT 10
         `);
-        stats.top_rental_locations = locationStats;
+    stats.top_rental_locations = locationStats;
 
-        // Furnished vs unfurnished distribution
-        const furnishedStats = await this.query(`
+    // Furnished vs unfurnished distribution
+    const furnishedStats = await this.query(`
             SELECT 
                 furnished_status,
                 COUNT(*) as count,
@@ -986,14 +1109,15 @@ class Database {
             WHERE is_active = 1 AND furnished_status IS NOT NULL
             GROUP BY furnished_status
         `);
-        stats.furnished_distribution = furnishedStats;
+    stats.furnished_distribution = furnishedStats;
 
-        return stats;
-    }
+    return stats;
+  }
 
-    async getInvestmentOpportunities(filters = {}, limit = 10) {
-        // Get properties with calculated rental yields
-        return await this.query(`
+  async getInvestmentOpportunities(filters = {}, limit = 10) {
+    // Get properties with calculated rental yields
+    return await this.query(
+      `
             SELECT 
                 p.*,
                 rya.gross_rental_yield,
@@ -1004,18 +1128,20 @@ class Database {
             FROM properties p
             JOIN rental_yield_analysis rya ON p.id = rya.sale_property_id
             WHERE p.is_active = 1
-            ${filters.min_yield ? 'AND rya.gross_rental_yield >= ?' : ''}
-            ${filters.location_city ? 'AND p.location_city = ?' : ''}
-            ${filters.max_price ? 'AND p.price <= ?' : ''}
+            ${filters.min_yield ? "AND rya.gross_rental_yield >= ?" : ""}
+            ${filters.location_city ? "AND p.location_city = ?" : ""}
+            ${filters.max_price ? "AND p.price <= ?" : ""}
             ORDER BY rya.gross_rental_yield DESC
             LIMIT ?
-        `, [
-            ...(filters.min_yield ? [filters.min_yield] : []),
-            ...(filters.location_city ? [filters.location_city] : []),
-            ...(filters.max_price ? [filters.max_price] : []),
-            limit
-        ]);
-    }
+        `,
+      [
+        ...(filters.min_yield ? [filters.min_yield] : []),
+        ...(filters.location_city ? [filters.location_city] : []),
+        ...(filters.max_price ? [filters.max_price] : []),
+        limit,
+      ]
+    );
+  }
 }
 
 // Create singleton instance
