@@ -69,6 +69,94 @@ router.get('/properties/:id/price-history', async (req, res) => {
     }
 });
 
+// Deactivate a specific property (admin only)
+router.patch('/properties/:id/deactivate', ...requireAuth, async (req, res) => {
+    try {
+        const propertyId = parseInt(req.params.id, 10);
+        
+        // Validate property ID
+        if (isNaN(propertyId) || propertyId <= 0) {
+            return res.status(400).json({ error: 'Invalid property ID' });
+        }
+        
+        // Check if property exists and is active
+        const property = await database.get('SELECT id, is_active FROM properties WHERE id = ?', [propertyId]);
+        
+        if (!property) {
+            return res.status(404).json({ error: 'Property not found' });
+        }
+        
+        if (!property.is_active) {
+            return res.status(400).json({ error: 'Property is already inactive' });
+        }
+        
+        // Deactivate the property
+        await database.run('UPDATE properties SET is_active = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [propertyId]);
+        
+        // Log the deactivation in lifecycle
+        await database.run(
+            'INSERT INTO property_lifecycle (property_id, event_type, metadata) VALUES (?, ?, ?)',
+            [propertyId, 'delisted', JSON.stringify({ 
+                deactivated_by: req.user.id, 
+                reason: 'manual_deactivation',
+                timestamp: new Date().toISOString() 
+            })]
+        );
+        
+        res.json({
+            success: true,
+            message: 'Property deactivated successfully'
+        });
+    } catch (error) {
+        console.error('Error deactivating property:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// Reactivate a specific property (admin only)
+router.patch('/properties/:id/reactivate', ...requireAuth, async (req, res) => {
+    try {
+        const propertyId = parseInt(req.params.id, 10);
+        
+        // Validate property ID
+        if (isNaN(propertyId) || propertyId <= 0) {
+            return res.status(400).json({ error: 'Invalid property ID' });
+        }
+        
+        // Check if property exists and is inactive
+        const property = await database.get('SELECT id, is_active FROM properties WHERE id = ?', [propertyId]);
+        
+        if (!property) {
+            return res.status(404).json({ error: 'Property not found' });
+        }
+        
+        if (property.is_active) {
+            return res.status(400).json({ error: 'Property is already active' });
+        }
+        
+        // Reactivate the property
+        await database.run('UPDATE properties SET is_active = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [propertyId]);
+        
+        // Log the reactivation in lifecycle
+        await database.run(
+            'INSERT INTO property_lifecycle (property_id, event_type, metadata) VALUES (?, ?, ?)',
+            [propertyId, 'relisted', JSON.stringify({ 
+                reactivated_by: req.user.id, 
+                reason: 'manual_reactivation',
+                timestamp: new Date().toISOString() 
+            })]
+        );
+        
+        res.json({
+            success: true,
+            message: 'Property reactivated successfully'
+        });
+    } catch (error) {
+        console.error('Error reactivating property:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
 // Get aggregated price history data for charts (require authentication)
 router.get('/price-history', ...requireAuth, async (req, res) => {
     try {
