@@ -172,9 +172,14 @@ module.exports = {
     // Clean and format URLs
     url: (href, baseUrl) => {
       if (!href) return null;
-      // Remove query parameters for cleaner URLs
-      const cleanHref = href.split('?')[0];
-      return cleanHref.startsWith('http') ? cleanHref : baseUrl + cleanHref;
+      try {
+        // Resolve relative URLs and preserve the query string
+        const u = new URL(href, baseUrl);
+        return u.toString();
+      } catch {
+        // Fallback: leave as-is if URL constructor fails
+        return href.startsWith('http') ? href : (baseUrl || '') + href;
+      }
     },
 
     // Extract external ID from URL if needed

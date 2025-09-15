@@ -534,9 +534,9 @@ class Property24Scraper {
                   property.id = insertResult.id; // Store the new property ID
                   
                   // Scrape property expenses only for new properties to avoid IP blocking
-                  // if (property.source_url && property.id) {
-                  //   await this.scrapePropertyExpenses(property.id, property.source_url);
-                  // }
+                  if (property.source_url && property.id) {
+                    await this.scrapePropertyExpenses(property.id, property.source_url);
+                  }
                 }
                 
                 logger.info(`Processed: ${property.title} - R${property.price}`);

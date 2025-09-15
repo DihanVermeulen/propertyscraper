@@ -101,7 +101,7 @@ class Property24Extractor {
           .find("[data-listing-number]")
           .first()
           .attr("data-listing-number");
-
+ 
       // If not found, try URL-based extraction
       if (!property.external_id) {
         property.source_url = this.extractWithTemplate(

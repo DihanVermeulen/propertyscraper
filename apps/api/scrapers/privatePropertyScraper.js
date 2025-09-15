@@ -366,7 +366,7 @@ class PrivatePropertyScraper {
                 if (titleEl.length > 0) {
                     property.title = titleEl.text().trim();
                     const href = titleEl.attr('href');
-                    property.source_url = href && href.startsWith('http') ? href : this.baseUrl + href;
+                    property.source_url = href && this.baseUrl + href;
                     break;
                 }
             }
