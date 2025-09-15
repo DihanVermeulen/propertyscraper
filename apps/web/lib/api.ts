@@ -53,7 +53,12 @@ export const propertiesApi = {
 
   // Deactivate a property
   deactivateProperty: async (id: number): Promise<void> => {
-    await api.post(`/api/properties/${id}/deactivate`);
+    await api.patch(`/api/properties/${id}/deactivate`);
+  },
+
+  // Reactivate a property
+  reactivateProperty: async (id: number): Promise<void> => {
+    await api.patch(`/api/properties/${id}/reactivate`);
   },
 
   // Get dashboard statistics
