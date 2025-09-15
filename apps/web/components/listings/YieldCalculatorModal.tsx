@@ -55,6 +55,8 @@ export default function YieldCalculatorModal({ property, isOpen, onClose }: Yiel
   const [expenses, setExpenses] = useState<PropertyExpenses | null>(null);
   const [isLoadingExpenses, setIsLoadingExpenses] = useState(false);
   const [expensesError, setExpensesError] = useState<string | null>(null);
+  const [isEditingExpenses, setIsEditingExpenses] = useState(false);
+  const [editableExpenses, setEditableExpenses] = useState<PropertyExpenses>({} as PropertyExpenses);
   const [isCalculating, setIsCalculating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [calculationResult, setCalculationResult] = useState<CalculationResult | null>(null);
@@ -68,8 +70,6 @@ export default function YieldCalculatorModal({ property, isOpen, onClose }: Yiel
   const [loanTermYears, setLoanTermYears] = useState([20]);
   const [estimatedMonthlyRental, setEstimatedMonthlyRental] = useState(0);
   const [vacancyFactor, setVacancyFactor] = useState([5]);
-  const [monthlyInsurance, setMonthlyInsurance] = useState(0);
-  const [monthlyMaintenance, setMonthlyMaintenance] = useState(0);
   const [calculationName, setCalculationName] = useState('');
 
   // Update deposit amount when percentage or purchase price changes
@@ -84,38 +84,129 @@ export default function YieldCalculatorModal({ property, isOpen, onClose }: Yiel
     }
   }, [isOpen, property.id]);
 
-  const loadExpenses = async (refresh = false) => {
+  // Clean up state when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      // Reset calculation result and errors when modal closes
+      setCalculationResult(null);
+      setCalculationError(null);
+      setExpensesError(null);
+      setIsCalculating(false);
+      setIsSaving(false);
+      setIsLoadingExpenses(false);
+      
+      // Ensure body scroll is restored
+      document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
+    }
+  }, [isOpen]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      // Ensure body scroll is restored on unmount
+      document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
+    };
+  }, []);
+
+  const loadExpenses = async () => {
     setIsLoadingExpenses(true);
     setExpensesError(null);
     
     try {
-      const response = await fetch(`/api/yield-calculator/property-expenses/${property.id}${refresh ? '?refresh=true' : ''}`);
+      const response = await fetch(`/api/yield-calculator/property-expenses/${property.id}`);
       
       if (!response.ok) {
         throw new Error(`Failed to load expenses: ${response.statusText}`);
       }
       
       const data = await response.json();
-      setExpenses(data.expenses);
       
-      if (data.needsRefresh && !refresh) {
-        // Optionally show a notice that expenses might be outdated
+      if (data.expenses && (data.expenses.municipal_rates > 0 || data.expenses.body_corporate_levies > 0 || 
+                           data.expenses.insurance_estimate > 0 || data.expenses.maintenance_reserve > 0)) {
+        // We have meaningful expense data
+        setExpenses(data.expenses);
+        setEditableExpenses(data.expenses);
+        setIsEditingExpenses(false); // Show existing data, not in edit mode
+      } else {
+        // No pre-scraped expenses available, provide default values for manual input
+        const defaultExpenses = {
+          municipal_rates: 0,
+          body_corporate_levies: 0,
+          insurance_estimate: 0,
+          maintenance_reserve: 0,
+          data_source: 'user_input'
+        };
+        setExpenses(defaultExpenses);
+        setEditableExpenses(defaultExpenses);
+        setIsEditingExpenses(true); // Start in edit mode if no data
       }
     } catch (error) {
       console.error('Error loading expenses:', error);
       setExpensesError(error instanceof Error ? error.message : 'Failed to load expenses');
       
-      // Set default expenses on error
-      setExpenses({
+      // Set default expenses on error and enable editing
+      const defaultExpenses = {
         municipal_rates: 0,
         body_corporate_levies: 0,
         insurance_estimate: 0,
         maintenance_reserve: 0,
-        data_source: 'default'
-      });
+        data_source: 'user_input'
+      };
+      setExpenses(defaultExpenses);
+      setEditableExpenses(defaultExpenses);
+      setIsEditingExpenses(true);
     } finally {
       setIsLoadingExpenses(false);
     }
+  };
+  
+  const handleEditExpenses = () => {
+    setIsEditingExpenses(true);
+  };
+  
+  const handleSaveExpenses = async () => {
+    try {
+      // Save the expenses to the database
+      const response = await fetch(`/api/yield-calculator/property-expenses/${property.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...editableExpenses,
+          data_source: 'user_input'
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to save expenses');
+      }
+      
+      // Update the local state
+      const updatedExpenses = {
+        ...editableExpenses,
+        data_source: 'user_input'
+      };
+      setExpenses(updatedExpenses);
+      setIsEditingExpenses(false);
+    } catch (error) {
+      console.error('Error saving expenses:', error);
+      alert('Failed to save expenses. Please try again.');
+    }
+  };
+  
+  const handleCancelEditExpenses = () => {
+    // Reset to original values
+    setEditableExpenses(expenses || {
+      municipal_rates: 0,
+      body_corporate_levies: 0,
+      insurance_estimate: 0,
+      maintenance_reserve: 0,
+      data_source: 'user_input'
+    });
+    setIsEditingExpenses(false);
   };
 
   const calculateYield = async () => {
@@ -132,10 +223,10 @@ export default function YieldCalculatorModal({ property, isOpen, onClose }: Yiel
         depositPercentage: depositPercentage?.[0] || 0,
         interestRate: interestRate?.[0] || 0,
         loanTermMonths: (loanTermYears?.[0] || 0) * 12,
-        monthlyLevies: expenses.body_corporate_levies,
-        monthlyRates: expenses.municipal_rates,
-        monthlyInsurance: monthlyInsurance,
-        monthlyMaintenance: monthlyMaintenance,
+        monthlyLevies: expenses.body_corporate_levies || 0,
+        monthlyRates: expenses.municipal_rates || 0,
+        monthlyInsurance: expenses.insurance_estimate || 0,
+        monthlyMaintenance: expenses.maintenance_reserve || 0,
         estimatedMonthlyRental,
         vacancyFactor: vacancyFactor[0],
         calculationName: calculationName || `Calculation ${new Date().toLocaleDateString()}`,
@@ -180,11 +271,11 @@ export default function YieldCalculatorModal({ property, isOpen, onClose }: Yiel
         loan_amount: purchasePrice - depositAmount,
         interest_rate: interestRate?.[0] || 0,
         loan_term_months: (loanTermYears?.[0] || 0) * 12,
-        monthly_repayment: Math.round(calculationResult.totalMonthlyExpenses - expenses.body_corporate_levies - expenses.municipal_rates - monthlyInsurance - monthlyMaintenance),
-        monthly_levies: expenses.body_corporate_levies,
-        monthly_rates: expenses.municipal_rates,
-        monthly_insurance: monthlyInsurance,
-        monthly_maintenance: monthlyMaintenance,
+        monthly_repayment: Math.round(calculationResult.totalMonthlyExpenses - (expenses.body_corporate_levies || 0) - (expenses.municipal_rates || 0) - (expenses.insurance_estimate || 0) - (expenses.maintenance_reserve || 0)),
+        monthly_levies: expenses.body_corporate_levies || 0,
+        monthly_rates: expenses.municipal_rates || 0,
+        monthly_insurance: expenses.insurance_estimate || 0,
+        monthly_maintenance: expenses.maintenance_reserve || 0,
         estimated_monthly_rental: estimatedMonthlyRental,
         vacancy_factor: vacancyFactor[0],
         monthly_rental_income: calculationResult.monthlyRentalIncome,
@@ -234,7 +325,18 @@ export default function YieldCalculatorModal({ property, isOpen, onClose }: Yiel
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog 
+      open={isOpen} 
+      onOpenChange={(open) => {
+        console.log('Dialog onOpenChange:', open);
+        if (!open) {
+          // Add a small timeout to ensure proper cleanup
+          setTimeout(() => {
+            onClose();
+          }, 0);
+        }
+      }}
+    >
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
@@ -252,19 +354,34 @@ export default function YieldCalculatorModal({ property, isOpen, onClose }: Yiel
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg">Property Expenses</CardTitle>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => loadExpenses(true)}
-                    disabled={isLoadingExpenses}
-                  >
-                    {isLoadingExpenses ? (
-                      <LoaderIcon className="h-4 w-4 animate-spin" />
+                  <div className="flex space-x-2">
+                    {!isEditingExpenses ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleEditExpenses}
+                        disabled={isLoadingExpenses}
+                      >
+                        Edit
+                      </Button>
                     ) : (
-                      <RefreshCcwIcon className="h-4 w-4" />
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleCancelEditExpenses}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={handleSaveExpenses}
+                        >
+                          Save
+                        </Button>
+                      </>
                     )}
-                    Refresh
-                  </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -281,34 +398,105 @@ export default function YieldCalculatorModal({ property, isOpen, onClose }: Yiel
                     <span>Loading expenses...</span>
                   </div>
                 ) : expenses ? (
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span>Municipal Rates:</span>
-                      <span className="font-medium">{formatCurrency(expenses.municipal_rates)}/month</span>
+                  isEditingExpenses ? (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="municipalRates">Municipal Rates (monthly)</Label>
+                          <Input
+                            id="municipalRates"
+                            type="number"
+                            value={editableExpenses.municipal_rates || 0}
+                            onChange={(e) => setEditableExpenses(prev => ({
+                              ...prev,
+                              municipal_rates: Number(e.target.value)
+                            }))}
+                            placeholder="Enter monthly municipal rates"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="bodyCorporatelevies">Levies</Label>
+                          <Input
+                            id="bodyCorporatelevies"
+                            type="number"
+                            value={editableExpenses.body_corporate_levies || 0}
+                            onChange={(e) => setEditableExpenses(prev => ({
+                              ...prev,
+                              body_corporate_levies: Number(e.target.value)
+                            }))}
+                            placeholder="Enter monthly levies"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="insuranceEstimate">Insurance Estimate</Label>
+                          <Input
+                            id="insuranceEstimate"
+                            type="number"
+                            value={editableExpenses.insurance_estimate || 0}
+                            onChange={(e) => setEditableExpenses(prev => ({
+                              ...prev,
+                              insurance_estimate: Number(e.target.value)
+                            }))}
+                            placeholder="Enter monthly insurance"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="maintenanceReserve">Maintenance Reserve</Label>
+                          <Input
+                            id="maintenanceReserve"
+                            type="number"
+                            value={editableExpenses.maintenance_reserve || 0}
+                            onChange={(e) => setEditableExpenses(prev => ({
+                              ...prev,
+                              maintenance_reserve: Number(e.target.value)
+                            }))}
+                            placeholder="Enter monthly maintenance"
+                          />
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex justify-between">
-                      <span>Body Corporate Levies:</span>
-                      <span className="font-medium">{formatCurrency(expenses.body_corporate_levies)}/month</span>
+                  ) : (
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span>Municipal Rates:</span>
+                        <span className="font-medium">{formatCurrency(expenses.municipal_rates || 0)}/month</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Body Corporate Levies:</span>
+                        <span className="font-medium">{formatCurrency(expenses.body_corporate_levies || 0)}/month</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Insurance Estimate:</span>
+                        <span className="font-medium">{formatCurrency(expenses.insurance_estimate || 0)}/month</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Maintenance Reserve:</span>
+                        <span className="font-medium">{formatCurrency(expenses.maintenance_reserve || 0)}/month</span>
+                      </div>
+                      <Separator />
+                      <div className="flex justify-between font-medium">
+                        <span>Total Property Expenses:</span>
+                        <span>{formatCurrency((expenses.municipal_rates || 0) + (expenses.body_corporate_levies || 0) + (expenses.insurance_estimate || 0) + (expenses.maintenance_reserve || 0))}/month</span>
+                      </div>
+                      {expenses.data_source === 'scraped' && (
+                        <p className="text-xs text-green-600">
+                          ✓ Data scraped from property listing
+                        </p>
+                      )}
+                      {expenses.data_source === 'user_input' && (
+                        <p className="text-xs text-blue-600">
+                          ✓ User-provided data
+                        </p>
+                      )}
+                      {expenses.data_source === 'default' && (
+                        <p className="text-xs text-muted-foreground">
+                          Using default values - click Edit to customize
+                        </p>
+                      )}
                     </div>
-                    <div className="flex justify-between">
-                      <span>Monthly Insurance:</span>
-                      <span className="font-medium">{formatCurrency(monthlyInsurance)}/month</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Monthly Maintenance:</span>
-                      <span className="font-medium">{formatCurrency(monthlyMaintenance)}/month</span>
-                    </div>
-                    <Separator />
-                    <div className="flex justify-between font-medium">
-                      <span>Total Property Expenses:</span>
-                      <span>{formatCurrency(expenses.municipal_rates + expenses.body_corporate_levies + monthlyInsurance + monthlyMaintenance)}/month</span>
-                    </div>
-                    {expenses.data_source !== 'scraped' && (
-                      <p className="text-xs text-muted-foreground">
-                        * Using estimated values. Click refresh to scrape actual data.
-                      </p>
-                    )}
-                  </div>
+                  )
                 ) : null}
               </CardContent>
             </Card>
@@ -337,29 +525,6 @@ export default function YieldCalculatorModal({ property, isOpen, onClose }: Yiel
                       value={estimatedMonthlyRental}
                       onChange={(e) => setEstimatedMonthlyRental(Number(e.target.value))}
                       placeholder="Enter estimated rental"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="monthlyInsurance">Monthly Insurance</Label>
-                    <Input
-                      id="monthlyInsurance"
-                      type="number"
-                      value={monthlyInsurance}
-                      onChange={(e) => setMonthlyInsurance(Number(e.target.value))}
-                      placeholder="Enter monthly insurance"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="monthlyMaintenance">Monthly Maintenance</Label>
-                    <Input
-                      id="monthlyMaintenance"
-                      type="number"
-                      value={monthlyMaintenance}
-                      onChange={(e) => setMonthlyMaintenance(Number(e.target.value))}
-                      placeholder="Enter monthly maintenance"
                     />
                   </div>
                 </div>
