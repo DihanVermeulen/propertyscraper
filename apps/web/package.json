@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "next dev --port 3000",
     "dev:turbo": "next dev --turbopack --port 3000",
+    "prebuild": "cd ../../packages/core && pnpm run build",
     "build": "next build",
     "start": "next start",
     "lint": "next lint --max-warnings 0",
