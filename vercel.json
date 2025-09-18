@@ -1,5 +1,0 @@
-{
-  "buildCommand": "turbo build --filter=web",
-  "installCommand": "pnpm install",
-  "ignoreCommand": "git diff --quiet HEAD^ HEAD ."
-}
