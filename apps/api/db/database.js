@@ -1,33 +1,129 @@
 const sqlite3 = require("sqlite3").verbose();
+const { createClient } = require('@libsql/client');
 const fs = require("fs");
 const path = require("path");
 
 class Database {
   constructor() {
     this.db = null;
-    this.init();
+    this.adapter = null;
+    this.isTurso = false;
+    this.initialized = false;
+    this.initPromise = this.init();
+  }
+  
+  async ensureInitialized() {
+    if (!this.initialized) {
+      await this.initPromise;
+    }
   }
 
-  init() {
-    // Create db directory if it doesn't exist
-    const dbDir = path.join(__dirname);
-    if (!fs.existsSync(dbDir)) {
-      fs.mkdirSync(dbDir, { recursive: true });
+  async init() {
+    const useTurso = process.env.USE_TURSO === 'true';
+    console.log("🚀 ~ Database ~ init ~ useTurso:", useTurso)
+    const isProduction = process.env.NODE_ENV === 'production';
+    
+    if (useTurso) {
+      await this.initTurso();
+    } else {
+      await this.initSQLite();
     }
-
-    // Connect to SQLite database
-    const dbPath = path.join(__dirname, "properties.db");
-    this.db = new sqlite3.Database(dbPath, (err) => {
-      if (err) {
-        console.error("Error opening database:", err.message);
-        throw err;
+    
+    await this.initSchema();
+    this.initialized = true;
+  }
+  
+  async initTurso() {
+    console.log('🌐 Initializing Turso database connection...');
+    
+    if (!process.env.TURSO_DATABASE_URL) {
+      throw new Error('TURSO_DATABASE_URL is required when USE_TURSO=true');
+    }
+    
+    const config = {
+      url: process.env.TURSO_DATABASE_URL
+    };
+    
+    if (process.env.TURSO_AUTH_TOKEN) {
+      config.authToken = process.env.TURSO_AUTH_TOKEN;
+    }
+    
+    // Support for embedded replicas
+    if (process.env.TURSO_SYNC_URL) {
+      config.syncUrl = process.env.TURSO_SYNC_URL;
+      if (process.env.TURSO_LOCAL_DB_PATH) {
+        config.syncInterval = 5000; // Sync every 5 seconds
+        console.log('📱 Using embedded replica mode');
       }
-      console.log("Connected to SQLite database");
-      this.initSchema();
+    }
+    
+    try {
+      this.db = createClient(config);
+      this.isTurso = true;
+      this.adapter = new TursoAdapter(this.db);
+      
+      // Test the connection
+      await this.testConnection();
+      console.log('✅ Connected to Turso database');
+    } catch (error) {
+      console.error('❌ Failed to connect to Turso:', error.message);
+      throw error;
+    }
+  }
+  
+  async initSQLite() {
+    console.log('🗄️ Initializing local SQLite database...');
+    
+    // Determine database path
+    let dbPath;
+    let dbDir;
+    
+    if (process.env.DB_PATH) {
+      dbPath = path.resolve(process.env.DB_PATH);
+      dbDir = path.dirname(dbPath);
+      console.log(`🗄️ Using configured database path: ${dbPath}`);
+    } else {
+      dbDir = path.join(__dirname);
+      dbPath = path.join(__dirname, "properties.db");
+      console.log(`🗄️ Using default database path: ${dbPath}`);
+    }
+    
+    // Create db directory if it doesn't exist
+    if (!fs.existsSync(dbDir)) {
+      try {
+        fs.mkdirSync(dbDir, { recursive: true });
+        console.log(`📁 Created database directory: ${dbDir}`);
+      } catch (error) {
+        console.error(`❌ Failed to create database directory: ${error.message}`);
+        throw new Error(`Cannot create database directory: ${dbDir}`);
+      }
+    }
+    
+    // Connect to SQLite database
+    this.db = await new Promise((resolve, reject) => {
+      const db = new sqlite3.Database(dbPath, (err) => {
+        if (err) {
+          console.error("❌ Error opening database:", err.message);
+          reject(err);
+        } else {
+          console.log(`✅ Connected to SQLite database: ${path.basename(dbPath)}`);
+          resolve(db);
+        }
+      });
     });
-
+    
+    this.isTurso = false;
+    this.adapter = new SQLiteAdapter(this.db);
+    
     // Enable foreign keys
-    this.db.run("PRAGMA foreign_keys = ON");
+    await this.adapter.run("PRAGMA foreign_keys = ON");
+  }
+  
+  async testConnection() {
+    if (this.isTurso) {
+      // Test Turso connection
+      await this.db.execute('SELECT 1 as test');
+    }
   }
 
   async initSchema() {
@@ -35,17 +131,36 @@ class Database {
       const schemaPath = path.join(__dirname, "schema.sql");
       const schema = fs.readFileSync(schemaPath, "utf8");
 
-      // Execute the entire schema as one statement
-      await new Promise((resolve, reject) => {
-        this.db.exec(schema, (err) => {
-          if (err) {
-            console.error("Error executing schema:", err.message);
-            reject(err);
-          } else {
-            resolve();
+      if (this.isTurso) {
+        // For Turso, we need to parse and execute statements properly
+        const statements = this.parseSQLStatements(schema);
+        console.log(`Executing ${statements.length} SQL statements...`);
+        
+        for (let i = 0; i < statements.length; i++) {
+          const statement = statements[i];
+          if (statement.trim()) {
+            try {
+              await this.db.execute(statement);
+            } catch (error) {
+              console.error(`Error executing statement ${i + 1}:`, error.message);
+              console.error('Statement:', statement.substring(0, 200) + (statement.length > 200 ? '...' : ''));
+              throw error;
+            }
           }
+        }
+      } else {
+        // For SQLite, execute the entire schema as one statement
+        await new Promise((resolve, reject) => {
+          this.db.exec(schema, (err) => {
+            if (err) {
+              console.error("Error executing schema:", err.message);
+              reject(err);
+            } else {
+              resolve();
+            }
+          });
         });
-      });
+      }
 
       console.log("Database schema initialized successfully");
     } catch (error) {
@@ -53,56 +168,101 @@ class Database {
       throw error;
     }
   }
+  
+  /**
+   * Properly parse SQL statements handling complex triggers and multi-line statements
+   */
+  parseSQLStatements(sql) {
+    const statements = [];
+    let currentStatement = '';
+    let inTrigger = false;
+    let triggerDepth = 0;
+    
+    const lines = sql.split('\n');
+    
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+      
+      // Skip comments and empty lines
+      if (trimmedLine.startsWith('--') || trimmedLine === '') {
+        continue;
+      }
+      
+      currentStatement += line + '\n';
+      
+      // Track trigger blocks
+      if (trimmedLine.toUpperCase().includes('CREATE TRIGGER')) {
+        inTrigger = true;
+        triggerDepth = 0;
+      }
+      
+      if (inTrigger) {
+        if (trimmedLine.toUpperCase().includes('BEGIN')) {
+          triggerDepth++;
+        }
+        if (trimmedLine.toUpperCase().includes('END')) {
+          triggerDepth--;
+          if (triggerDepth <= 0) {
+            // End of trigger, look for semicolon
+            if (trimmedLine.endsWith(';')) {
+              statements.push(currentStatement.trim());
+              currentStatement = '';
+              inTrigger = false;
+            }
+          }
+        }
+      } else {
+        // Not in trigger, split on semicolon
+        if (trimmedLine.endsWith(';')) {
+          statements.push(currentStatement.trim());
+          currentStatement = '';
+        }
+      }
+    }
+    
+    // Add any remaining statement
+    if (currentStatement.trim()) {
+      statements.push(currentStatement.trim());
+    }
+    
+    return statements.filter(stmt => stmt.length > 0);
+  }
 
-  // Generic query method
+  // Generic query method - delegates to adapter
   async query(sql, params = []) {
-    return new Promise((resolve, reject) => {
-      this.db.all(sql, params, (err, rows) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(rows);
-        }
-      });
-    });
+    await this.ensureInitialized();
+    return await this.adapter.query(sql, params);
   }
 
-  // Generic run method for INSERT, UPDATE, DELETE
+  // Generic run method for INSERT, UPDATE, DELETE - delegates to adapter
   async run(sql, params = []) {
-    return new Promise((resolve, reject) => {
-      this.db.run(sql, params, function (err) {
-        if (err) {
-          reject(err);
-        } else {
-          resolve({ id: this.lastID, changes: this.changes });
-        }
-      });
-    });
+    await this.ensureInitialized();
+    return await this.adapter.run(sql, params);
   }
 
-  // Get a single row
+  // Get a single row - delegates to adapter
   async get(sql, params = []) {
-    return new Promise((resolve, reject) => {
-      this.db.get(sql, params, (err, row) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(row);
-        }
-      });
-    });
+    await this.ensureInitialized();
+    return await this.adapter.get(sql, params);
   }
 
   // Close database connection
   close() {
-    if (this.db) {
-      this.db.close((err) => {
-        if (err) {
-          console.error("Error closing database:", err.message);
-        } else {
-          console.log("Database connection closed");
-        }
-      });
+    if (this.isTurso) {
+      if (this.db && this.db.close) {
+        this.db.close();
+        console.log("Turso database connection closed");
+      }
+    } else {
+      if (this.db) {
+        this.db.close((err) => {
+          if (err) {
+            console.error("Error closing database:", err.message);
+          } else {
+            console.log("SQLite database connection closed");
+          }
+        });
+      }
     }
   }
 
@@ -1141,6 +1301,87 @@ class Database {
         limit,
       ]
     );
+  }
+}
+
+// Database Adapter Classes
+class SQLiteAdapter {
+  constructor(db) {
+    this.db = db;
+  }
+
+  async query(sql, params = []) {
+    return new Promise((resolve, reject) => {
+      this.db.all(sql, params, (err, rows) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(rows);
+        }
+      });
+    });
+  }
+
+  async run(sql, params = []) {
+    return new Promise((resolve, reject) => {
+      this.db.run(sql, params, function (err) {
+        if (err) {
+          reject(err);
+        } else {
+          resolve({ id: this.lastID, changes: this.changes });
+        }
+      });
+    });
+  }
+
+  async get(sql, params = []) {
+    return new Promise((resolve, reject) => {
+      this.db.get(sql, params, (err, row) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(row);
+        }
+      });
+    });
+  }
+}
+
+class TursoAdapter {
+  constructor(db) {
+    this.db = db;
+  }
+
+  async query(sql, params = []) {
+    const result = await this.db.execute({ sql, args: params });
+    return result.rows.map(row => {
+      const obj = {};
+      result.columns.forEach((col, index) => {
+        obj[col] = row[index];
+      });
+      return obj;
+    });
+  }
+
+  async run(sql, params = []) {
+    const result = await this.db.execute({ sql, args: params });
+    return {
+      id: result.lastInsertRowid || null,
+      changes: result.rowsAffected || 0
+    };
+  }
+
+  async get(sql, params = []) {
+    const result = await this.db.execute({ sql, args: params });
+    if (result.rows.length === 0) {
+      return undefined;
+    }
+    
+    const obj = {};
+    result.columns.forEach((col, index) => {
+      obj[col] = result.rows[0][index];
+    });
+    return obj;
   }
 }
 
