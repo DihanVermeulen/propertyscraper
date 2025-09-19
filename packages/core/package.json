@@ -28,14 +28,11 @@
     "dev": "npx tsc --watch",
     "typecheck": "npx tsc --noEmit"
   },
-  "peerDependencies": {
-    "typescript": ">=4.0.0"
+  "dependencies": {
+    "zod": "^3.24.1",
+    "typescript": "5.8.3"
   },
   "devDependencies": {
-    "@repo/typescript-config": "workspace:*",
-    "typescript": "latest"
-  },
-  "dependencies": {
-    "zod": "^3.24.1"
+    "@repo/typescript-config": "workspace:*"
   }
 }
