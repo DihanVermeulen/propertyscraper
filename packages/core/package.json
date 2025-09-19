@@ -24,9 +24,9 @@
     }
   },
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
-    "typecheck": "tsc --noEmit"
+    "build": "npx tsc",
+    "dev": "npx tsc --watch",
+    "typecheck": "npx tsc --noEmit"
   },
   "peerDependencies": {
     "typescript": ">=4.0.0"
