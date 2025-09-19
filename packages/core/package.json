@@ -29,10 +29,11 @@
     "typecheck": "npx tsc --noEmit"
   },
   "dependencies": {
+    "@repo/typescript-config": "workspace:*",
     "zod": "^3.24.1",
     "typescript": "5.8.3"
   },
   "devDependencies": {
-    "@repo/typescript-config": "workspace:*"
+    
   }
 }
