@@ -6,4 +6,8 @@ router.get('/', function(req, res, next) {
   res.render('index', { title: 'Express' });
 });
 
+router.get('/health', function(req, res, next) {
+  res.json({ message: 'OK' });
+});
+
 module.exports = router;
