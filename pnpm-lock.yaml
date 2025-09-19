@@ -203,6 +203,9 @@ importers:
       '@repo/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@repo/typescript-config':
+        specifier: workspace:*
+        version: link:../../packages/typescript-config
       '@repo/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -261,9 +264,6 @@ importers:
       '@repo/eslint-config':
         specifier: workspace:*
         version: link:../../packages/eslint-config
-      '@repo/typescript-config':
-        specifier: workspace:*
-        version: link:../../packages/typescript-config
       '@types/node':
         specifier: ^22.15.3
         version: 22.15.3
@@ -288,16 +288,15 @@ importers:
 
   packages/core:
     dependencies:
+      '@repo/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
       typescript:
         specifier: 5.8.3
         version: 5.8.3
       zod:
         specifier: ^3.24.1
         version: 3.25.76
-    devDependencies:
-      '@repo/typescript-config':
-        specifier: workspace:*
-        version: link:../typescript-config
 
   packages/eslint-config:
     devDependencies:
