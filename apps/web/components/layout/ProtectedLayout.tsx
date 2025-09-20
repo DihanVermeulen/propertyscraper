@@ -28,8 +28,6 @@ const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ children }) => {
     );
   }
 
-  return <ApiDebugger />;
-
   // If not authenticated and not on auth route, the AuthContext will redirect to login
   // If on auth route, render children directly without sidebar
   if (isAuthRoute || !isAuthenticated) {
