@@ -41,20 +41,22 @@ export default function ApiDebugger() {
     }
   };
 
+  const baseURL = process.env.NEXT_PUBLIC_API_BASE_URL;
+
   const tests = [
     {
       name: 'API Health Check',
-      endpoint: 'https://propertyscraper-api.vercel.app/api/health',
+      endpoint: `${baseURL}/api/health`,
       method: 'GET'
     },
     {
       name: 'CORS Test',
-      endpoint: 'https://propertyscraper-api.vercel.app/api/cors-test',
+      endpoint: `${baseURL}/api/cors-test`,
       method: 'GET'
     },
     {
       name: 'Login Test (Invalid Creds)',
-      endpoint: 'https://propertyscraper-api.vercel.app/api/users/auth/login',
+      endpoint: `${baseURL}/api/users/auth/login`,
       method: 'POST',
       options: {
         method: 'POST',
