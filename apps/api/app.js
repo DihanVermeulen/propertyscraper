@@ -58,18 +58,31 @@ app.use('/api/yield-calculator', yieldCalculatorRouter);
 
 // CORS debug endpoint
 app.get('/api/cors-test', (req, res) => {
+    const requestOrigin = req.get('Origin');
+    const allowedOrigin = process.env.FRONTEND_URL;
+    
     res.json({
         message: 'CORS is working!',
-        origin: req.get('Origin'),
-        allowedOrigin: process.env.FRONTEND_URL,
-        nodeEnv: process.env.NODE_ENV,
-        headers: {
-            origin: req.get('Origin'),
-            'user-agent': req.get('User-Agent'),
-            'access-control-request-method': req.get('Access-Control-Request-Method'),
-            'access-control-request-headers': req.get('Access-Control-Request-Headers')
+        debug: {
+            requestOrigin,
+            allowedOrigin,
+            originMatch: requestOrigin === allowedOrigin,
+            nodeEnv: process.env.NODE_ENV,
+            method: req.method,
+            url: req.url,
+            allHeaders: req.headers
         },
         timestamp: new Date().toISOString()
+    });
+});
+
+// Add a simple health check that shows the API is responding
+app.get('/api/health', (req, res) => {
+    res.json({
+        status: 'OK',
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV,
+        version: '1.0.0'
     });
 });
 
