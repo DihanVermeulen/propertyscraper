@@ -65,7 +65,7 @@ router.post('/auth/login', validateLogin, handleValidationErrors, async (req, re
         res.cookie('refreshToken', result.refreshToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Allow cross-site cookies in production
             maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
         });
 
