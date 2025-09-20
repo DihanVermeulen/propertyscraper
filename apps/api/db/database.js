@@ -1357,7 +1357,9 @@ class TursoAdapter {
     return result.rows.map(row => {
       const obj = {};
       result.columns.forEach((col, index) => {
-        obj[col] = row[index];
+        const value = row[index];
+        // Convert BigInt to Number for JSON serialization
+        obj[col] = typeof value === 'bigint' ? Number(value) : value;
       });
       return obj;
     });
@@ -1366,7 +1368,7 @@ class TursoAdapter {
   async run(sql, params = []) {
     const result = await this.db.execute({ sql, args: params });
     return {
-      id: result.lastInsertRowid || null,
+      id: result.lastInsertRowid ? Number(result.lastInsertRowid) : null,
       changes: result.rowsAffected || 0
     };
   }
@@ -1379,7 +1381,9 @@ class TursoAdapter {
     
     const obj = {};
     result.columns.forEach((col, index) => {
-      obj[col] = result.rows[0][index];
+      const value = result.rows[0][index];
+      // Convert BigInt to Number for JSON serialization
+      obj[col] = typeof value === 'bigint' ? Number(value) : value;
     });
     return obj;
   }
