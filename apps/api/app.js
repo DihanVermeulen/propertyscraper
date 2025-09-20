@@ -24,7 +24,7 @@ app.use(helmet());
 app.use(cors({
     origin: process.env.FRONTEND_URL || 'http://localhost:3000', // Next.js default port
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
     credentials: true,
     optionsSuccessStatus: 200 // For legacy browser support
 }));
@@ -61,7 +61,14 @@ app.get('/api/cors-test', (req, res) => {
     res.json({
         message: 'CORS is working!',
         origin: req.get('Origin'),
-        headers: req.headers,
+        allowedOrigin: process.env.FRONTEND_URL,
+        nodeEnv: process.env.NODE_ENV,
+        headers: {
+            origin: req.get('Origin'),
+            'user-agent': req.get('User-Agent'),
+            'access-control-request-method': req.get('Access-Control-Request-Method'),
+            'access-control-request-headers': req.get('Access-Control-Request-Headers')
+        },
         timestamp: new Date().toISOString()
     });
 });
