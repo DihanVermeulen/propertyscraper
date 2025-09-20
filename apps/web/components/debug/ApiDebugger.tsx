@@ -18,7 +18,7 @@ export default function ApiDebugger() {
       
       const data = await response.json();
       
-      setResults(prev => ({
+      setResults((prev: any) => ({
         ...prev,
         [endpoint]: {
           status: response.status,
@@ -29,7 +29,7 @@ export default function ApiDebugger() {
         }
       }));
     } catch (error: any) {
-      setResults(prev => ({
+      setResults((prev: any) => ({
         ...prev,
         [endpoint]: {
           error: error.message,
