@@ -12,6 +12,7 @@ const rentalPropertiesRouter = require('./routes/rentalProperties');
 const scraperRouter = require('./routes/scraper');
 const usersRouter = require('./routes/users');
 const yieldCalculatorRouter = require('./routes/yieldCalculator');
+const investorRouter = require('./routes/investor');
 
 // Import and initialize scheduler
 // const Scheduler = require('./services/Scheduler');
@@ -55,6 +56,7 @@ app.use('/api', propertiesRouter);
 app.use('/api', rentalPropertiesRouter);
 app.use('/api/scraper', scraperRouter);
 app.use('/api/yield-calculator', yieldCalculatorRouter);
+app.use('/api', investorRouter);
 
 // CORS debug endpoint
 app.get('/api/cors-test', (req, res) => {

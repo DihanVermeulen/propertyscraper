@@ -10,7 +10,7 @@ class AuthService {
         this.JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '15m';
         this.JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || '7d';
         this.BCRYPT_ROUNDS = parseInt(process.env.BCRYPT_ROUNDS) || 12;
-        this.MAX_FAILED_ATTEMPTS = 5;
+        this.MAX_FAILED_ATTEMPTS = 10;
         this.LOCK_TIME = 30 * 60 * 1000; // 30 minutes
     }
 
