@@ -96,18 +96,26 @@ export default function ListingsPage() {
           <TabsTrigger value="for-sale" className="flex items-center gap-2">
             <Home className="h-4 w-4" />
             For Sale
-            {saleData?.total && (
+            {saleData?.total && saleData.total > 0 ? (
               <span className="bg-primary/10 text-primary text-xs px-2 rounded-full">
                 {saleData.total.toLocaleString()}
+              </span>
+            ) : (
+              <span className="bg-primary/10 text-primary text-xs px-2 rounded-full">
+                0
               </span>
             )}
           </TabsTrigger>
           <TabsTrigger value="rentals" className="flex items-center gap-2">
             <Building className="h-4 w-4" />
             Rentals
-            {rentalData?.total && (
+            {rentalData?.total && rentalData.total > 0 ? (
               <span className="bg-primary/10 text-primary text-xs px-2 rounded-full">
                 {rentalData.total.toLocaleString()}
+              </span>
+            ) : (
+              <span className="bg-primary/10 text-primary text-xs px-2 rounded-full">
+                0
               </span>
             )}
           </TabsTrigger>
