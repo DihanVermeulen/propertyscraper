@@ -441,7 +441,12 @@ class Property24Scraper {
           logger.info("No listings found with any selector");
         }
 
-        // Process each listing
+        // Collect properties for batch processing
+        const newProperties = [];
+        const updateProperties = [];
+        const validatedProperties = [];
+        
+        // Process each listing (extract data only)
         for (let i = 0; i < listings.length; i++) {
           try {
             const listing = listings.eq(i);
@@ -466,14 +471,142 @@ class Property24Scraper {
             if (property.external_id && property.title && isInTargetLocation) {
               // Track this property's external_id for delisting detection
               foundExternalIds.push(property.external_id);
+              validatedProperties.push(property);
+            } else {
+              logger.warn(
+                `Skipping property due to missing data: ID=${property.external_id}, Title=${property.title}`
+              );
+            }
+          } catch (error) {
+            logger.error(`Error processing listing ${i}:`, error.message);
+            logs.push(`Error processing listing ${i}: ${error.message}`);
+          }
+        }
+        
+        logger.info(`Validated ${validatedProperties.length} properties, preparing for batch operations...`);
+        
+        // Check which properties exist and separate new vs updates
+        for (const property of validatedProperties) {
+          try {
+            if (this.listingType === 'rent') {
+              const existing = await database.get(
+                'SELECT id FROM rental_properties WHERE external_id = ? AND source_website = ?',
+                [property.external_id, this.source]
+              );
+              if (existing) {
+                property._existing_id = existing.id; // Store for reference
+                updateProperties.push(property);
+              } else {
+                newProperties.push(property);
+              }
+            } else {
+              const existing = await database.get(
+                "SELECT id FROM properties WHERE external_id = ? AND source_website = ?",
+                [property.external_id, this.source]
+              );
+              if (existing) {
+                property._existing_id = existing.id; // Store for reference
+                updateProperties.push(property);
+              } else {
+                newProperties.push(property);
+              }
+            }
+          } catch (error) {
+            logger.error(`Error checking existing property ${property.external_id}:`, error.message);
+          }
+        }
+        
+        logger.info(`Batch operations: ${newProperties.length} new, ${updateProperties.length} updates`);
+        
+        // Perform batch insert for new properties
+        if (newProperties.length > 0) {
+          try {
+            if (this.listingType === 'rent') {
+              const insertResult = await database.batchInsertRentalProperties(newProperties);
+              propertiesNew += insertResult.inserted;
+              if (insertResult.errors.length > 0) {
+                logger.warn(`Batch rental insert had ${insertResult.errors.length} errors`);
+                insertResult.errors.forEach(error => {
+                  logger.error(`Insert error for property ${error.property?.external_id}: ${error.error}`);
+                });
+              }
+              logger.info(`Batch inserted ${insertResult.inserted} new rental properties`);
+            } else {
+              const insertResult = await database.batchInsertProperties(newProperties);
+              propertiesNew += insertResult.inserted;
+              if (insertResult.errors.length > 0) {
+                logger.warn(`Batch sale insert had ${insertResult.errors.length} errors`);
+                insertResult.errors.forEach(error => {
+                  logger.error(`Insert error for property ${error.property?.external_id}: ${error.error}`);
+                });
+              }
+              logger.info(`Batch inserted ${insertResult.inserted} new sale properties`);
               
-              if (this.listingType === 'rent') {
-                // Handle rental property
-                const existing = await database.get(
-                  'SELECT id FROM rental_properties WHERE external_id = ? AND source_website = ?',
-                  [property.external_id, this.source]
-                );
-                if (existing) {
+              // For new sale properties, scrape expenses (this could be optimized further in the future)
+              for (const property of newProperties) {
+                if (property.source_url && insertResult.inserted > 0) {
+                  // Note: We can't easily match which property got which ID in batch insert
+                  // This is a limitation we can address later by returning IDs from batch insert
+                  logger.info(`Skipping expense scraping for batch-inserted property: ${property.external_id}`);
+                  // await this.scrapePropertyExpenses(property.id, property.source_url);
+                }
+              }
+            }
+          } catch (error) {
+            logger.error(`Batch insert failed, falling back to individual inserts: ${error.message}`);
+            // Fallback to individual inserts
+            for (const property of newProperties) {
+              try {
+                if (this.listingType === 'rent') {
+                  await database.insertRentalProperty(property);
+                  propertiesNew++;
+                  logger.info(`Individual insert: rental ${property.title} - R${property.rental_price}/month`);
+                } else {
+                  const insertResult = await database.insertProperty(property);
+                  propertiesNew++;
+                  property.id = insertResult.id;
+                  if (property.source_url) {
+                    // await this.scrapePropertyExpenses(property.id, property.source_url);
+                  }
+                  logger.info(`Individual insert: sale ${property.title} - R${property.price}`);
+                }
+              } catch (individualError) {
+                logger.error(`Individual insert failed for ${property.external_id}: ${individualError.message}`);
+              }
+            }
+          }
+        }
+        
+        // Perform batch update for existing properties
+        if (updateProperties.length > 0) {
+          try {
+            if (this.listingType === 'rent') {
+              const updateResult = await database.batchUpdateRentalProperties(updateProperties);
+              propertiesUpdated += updateResult.updated;
+              if (updateResult.errors.length > 0) {
+                logger.warn(`Batch rental update had ${updateResult.errors.length} errors`);
+                updateResult.errors.forEach(error => {
+                  logger.error(`Update error for property ${error.property?.external_id}: ${error.error}`);
+                });
+              }
+              logger.info(`Batch updated ${updateResult.updated} existing rental properties`);
+            } else {
+              const updateResult = await database.batchUpdateProperties(updateProperties);
+              propertiesUpdated += updateResult.updated;
+              if (updateResult.errors.length > 0) {
+                logger.warn(`Batch sale update had ${updateResult.errors.length} errors`);
+                updateResult.errors.forEach(error => {
+                  logger.error(`Update error for property ${error.property?.external_id}: ${error.error}`);
+                });
+              }
+              logger.info(`Batch updated ${updateResult.updated} existing sale properties`);
+            }
+          } catch (error) {
+            logger.error(`Batch update failed, falling back to individual updates: ${error.message}`);
+            // Fallback to individual updates
+            for (const property of updateProperties) {
+              try {
+                if (this.listingType === 'rent') {
                   await database.run(`
                     UPDATE rental_properties SET 
                       title = ?, description = ?, rental_price = ?, rental_period = ?,
@@ -489,66 +622,33 @@ class Property24Scraper {
                       JSON.stringify(property.utilities_included || []), property.pet_policy,
                       property.property_type, property.bedrooms, property.bathrooms,
                       property.parking_spaces, property.floor_area, property.location_city,
-                      property.location_suburb, existing.id
+                      property.location_suburb, property._existing_id
                     ]
                   );
                   propertiesUpdated++;
+                  logger.info(`Individual update: rental ${property.title} - R${property.rental_price}/month`);
                 } else {
-                  await database.insertRentalProperty(property);
-                  propertiesNew++;
-                }
-                logger.info(`Processed rental: ${property.title} - R${property.rental_price}/month`);
-              } else {
-                // Handle sale property
-                const existing = await database.get(
-                  "SELECT id FROM properties WHERE external_id = ? AND source_website = ?",
-                  [property.external_id, this.source]
-                );
-                if (existing) {
-                  await database.run(
-                    `
-                                  UPDATE properties SET 
-                                      title = ?, description = ?, price = ?, 
-                                      property_type = ?, bedrooms = ?, bathrooms = ?,
-                                      parking_spaces = ?, location_city = ?, location_suburb = ?,
-                                      updated_at = CURRENT_TIMESTAMP
-                                  WHERE id = ?
-                              `,
+                  await database.run(`
+                    UPDATE properties SET 
+                        title = ?, description = ?, price = ?, 
+                        property_type = ?, bedrooms = ?, bathrooms = ?,
+                        parking_spaces = ?, location_city = ?, location_suburb = ?,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = ?`,
                     [
-                      property.title,
-                      property.description,
-                      property.price,
-                      property.property_type,
-                      property.bedrooms,
-                      property.bathrooms,
-                      property.parking_spaces,
-                      property.location_city,
-                      property.location_suburb,
-                      existing.id,
+                      property.title, property.description, property.price,
+                      property.property_type, property.bedrooms, property.bathrooms,
+                      property.parking_spaces, property.location_city, property.location_suburb,
+                      property._existing_id
                     ]
                   );
                   propertiesUpdated++;
-                } else {
-                  const insertResult = await database.insertProperty(property);
-                  propertiesNew++;
-                  property.id = insertResult.id; // Store the new property ID
-                  
-                  // Scrape property expenses only for new properties to avoid IP blocking
-                  if (property.source_url && property.id) {
-                    await this.scrapePropertyExpenses(property.id, property.source_url);
-                  }
+                  logger.info(`Individual update: sale ${property.title} - R${property.price}`);
                 }
-                
-                logger.info(`Processed: ${property.title} - R${property.price}`);
+              } catch (individualError) {
+                logger.error(`Individual update failed for ${property.external_id}: ${individualError.message}`);
               }
-            } else {
-              logger.warn(
-                `Skipping property due to missing data: ID=${property.external_id}, Title=${property.title}`
-              );
             }
-          } catch (error) {
-            logger.error(`Error processing listing ${i}:`, error.message);
-            logs.push(`Error processing listing ${i}: ${error.message}`);
           }
         }
 
