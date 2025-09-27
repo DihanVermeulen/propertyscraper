@@ -11,6 +11,40 @@ class Database {
     this.initialized = false;
     this.initPromise = this.init();
   }
+
+  // Sanitize a single SQL parameter to be Turso/SQLite-safe
+  sanitizeValue(value) {
+    if (value === undefined) return null;
+    if (value === null) return null;
+
+    // Date -> ISO string
+    if (value instanceof Date) return value.toISOString();
+
+    const t = typeof value;
+    if (t === 'boolean') return value ? 1 : 0;
+    if (t === 'bigint') return Number(value);
+
+    // Leave binary data as-is
+    if (value instanceof Uint8Array || (typeof Buffer !== 'undefined' && Buffer.isBuffer?.(value))) {
+      return value;
+    }
+
+    // JSON-serialize arrays/objects
+    if (t === 'object') {
+      try {
+        return JSON.stringify(value);
+      } catch (e) {
+        return String(value);
+      }
+    }
+
+    return value;
+  }
+
+  // Sanitize an array of SQL parameters
+  sanitizeArgs(args = []) {
+    return Array.isArray(args) ? args.map((v) => this.sanitizeValue(v)) : [];
+  }
   
   async ensureInitialized() {
     if (!this.initialized) {
@@ -231,19 +265,19 @@ class Database {
   // Generic query method - delegates to adapter
   async query(sql, params = []) {
     await this.ensureInitialized();
-    return await this.adapter.query(sql, params);
+return await this.adapter.query(sql, this.sanitizeArgs(params));
   }
 
   // Generic run method for INSERT, UPDATE, DELETE - delegates to adapter
   async run(sql, params = []) {
     await this.ensureInitialized();
-    return await this.adapter.run(sql, params);
+return await this.adapter.run(sql, this.sanitizeArgs(params));
   }
 
   // Get a single row - delegates to adapter
   async get(sql, params = []) {
     await this.ensureInitialized();
-    return await this.adapter.get(sql, params);
+return await this.adapter.get(sql, this.sanitizeArgs(params));
   }
 
   // Close database connection
@@ -309,6 +343,295 @@ class Database {
 
     return await this.run(sql, params);
   }
+
+  /**
+   * Batch insert multiple properties in a single transaction
+   * @param {Array} properties - Array of property objects
+   * @returns {Promise<Object>} Result with insert statistics
+   */
+  async batchInsertProperties(properties) {
+    if (!properties || properties.length === 0) {
+      return { inserted: 0, errors: [] };
+    }
+
+    const errors = [];
+    let inserted = 0;
+
+    if (this.isTurso) {
+      // For Turso, use batch transaction
+      const statements = properties.map(property => ({
+        sql: `INSERT OR REPLACE INTO properties (
+                external_id, title, description, price, price_currency,
+                property_type, bedrooms, bathrooms, parking_spaces,
+                floor_area, erf_size, location_province, location_city,
+                location_suburb, location_address, latitude, longitude,
+                source_website, source_url, images, features,
+                agent_name, agent_phone, agent_email, listing_date
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        args: [
+          property.external_id,
+          property.title,
+          property.description,
+          property.price,
+          property.price_currency || "ZAR",
+          property.property_type,
+          property.bedrooms,
+          property.bathrooms,
+          property.parking_spaces,
+          property.floor_area,
+          property.erf_size,
+          property.location_province,
+          property.location_city,
+          property.location_suburb,
+          property.location_address,
+          property.latitude,
+          property.longitude,
+          property.source_website,
+          property.source_url,
+          JSON.stringify(property.images || []),
+          JSON.stringify(property.features || []),
+          property.agent_name,
+          property.agent_phone,
+          property.agent_email,
+          property.listing_date,
+        ]
+      }));
+
+      try {
+        // Sanitize all statement args before sending to Turso
+        const sanitizedStatements = statements.map(st => ({ sql: st.sql, args: this.sanitizeArgs(st.args) }));
+        const results = await this.db.batch(sanitizedStatements);
+        
+        // Count successful inserts - Turso returns rowsAffected for successful operations
+        inserted = 0;
+        results.forEach((result, index) => {
+          if (result && !result.error && (result.rowsAffected > 0 || result.changes > 0)) {
+            inserted++;
+          }
+        });
+        
+        // Collect errors
+        results.forEach((result, index) => {
+          if (result.error) {
+            errors.push({
+              property: properties[index],
+              error: result.error.message || 'Unknown error'
+            });
+          }
+        });
+      } catch (error) {
+        console.error('Batch insert failed:', error.message);
+        errors.push({ error: error.message });
+      }
+    } else {
+      // For SQLite, use transaction with individual inserts
+      try {
+        await new Promise((resolve, reject) => {
+          this.db.serialize(() => {
+            this.db.run('BEGIN TRANSACTION');
+            
+            let completed = 0;
+            
+            properties.forEach((property, index) => {
+              const sql = `INSERT OR REPLACE INTO properties (
+                          external_id, title, description, price, price_currency,
+                          property_type, bedrooms, bathrooms, parking_spaces,
+                          floor_area, erf_size, location_province, location_city,
+                          location_suburb, location_address, latitude, longitude,
+                          source_website, source_url, images, features,
+                          agent_name, agent_phone, agent_email, listing_date
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+              
+              const params = [
+                property.external_id,
+                property.title,
+                property.description,
+                property.price,
+                property.price_currency || "ZAR",
+                property.property_type,
+                property.bedrooms,
+                property.bathrooms,
+                property.parking_spaces,
+                property.floor_area,
+                property.erf_size,
+                property.location_province,
+                property.location_city,
+                property.location_suburb,
+                property.location_address,
+                property.latitude,
+                property.longitude,
+                property.source_website,
+                property.source_url,
+                JSON.stringify(property.images || []),
+                JSON.stringify(property.features || []),
+                property.agent_name,
+                property.agent_phone,
+                property.agent_email,
+                property.listing_date,
+              ];
+              
+              this.db.run(sql, params, function(err) {
+                completed++;
+                if (err) {
+                  errors.push({ property, error: err.message });
+                } else {
+                  inserted++;
+                }
+                
+                if (completed === properties.length) {
+                  this.run('COMMIT', (commitErr) => {
+                    if (commitErr) {
+                      reject(commitErr);
+                    } else {
+                      resolve();
+                    }
+                  });
+                }
+              });
+            });
+          });
+        });
+      } catch (error) {
+        // Rollback on error
+        await new Promise((resolve) => {
+          this.db.run('ROLLBACK', () => resolve());
+        });
+        console.error('Batch transaction failed:', error.message);
+        errors.push({ error: error.message });
+      }
+    }
+
+    return { inserted, errors };
+  }
+
+  /**
+   * Batch update multiple existing properties in a single transaction
+   * @param {Array} properties - Array of property objects with external_id for identification
+   * @returns {Promise<Object>} Result with update statistics
+   */
+  async batchUpdateProperties(properties) {
+    if (!properties || properties.length === 0) {
+      return { updated: 0, errors: [] };
+    }
+
+    const errors = [];
+    let updated = 0;
+
+    if (this.isTurso) {
+      // For Turso, use batch transaction
+      const statements = properties.map(property => ({
+        sql: `UPDATE properties SET 
+                title = ?, description = ?, price = ?, 
+                property_type = ?, bedrooms = ?, bathrooms = ?,
+                parking_spaces = ?, location_city = ?, location_suburb = ?,
+                updated_at = CURRENT_TIMESTAMP
+              WHERE external_id = ? AND source_website = ?`,
+        args: [
+          property.title,
+          property.description,
+          property.price,
+          property.property_type,
+          property.bedrooms,
+          property.bathrooms,
+          property.parking_spaces,
+          property.location_city,
+          property.location_suburb,
+          property.external_id,
+          property.source_website
+        ]
+      }));
+
+      try {
+        // Sanitize all statement args before sending to Turso
+        const sanitizedStatements = statements.map(st => ({ sql: st.sql, args: this.sanitizeArgs(st.args) }));
+        const results = await this.db.batch(sanitizedStatements);
+        
+        // Count successful updates - Turso returns rowsAffected for successful operations
+        updated = 0;
+        results.forEach((result, index) => {
+          if (result && !result.error && (result.rowsAffected > 0 || result.changes > 0)) {
+            updated++;
+          }
+        });
+        
+        // Collect errors
+        results.forEach((result, index) => {
+          if (result.error) {
+            errors.push({
+              property: properties[index],
+              error: result.error.message || 'Unknown error'
+            });
+          }
+        });
+      } catch (error) {
+        console.error('Batch update failed:', error.message);
+        errors.push({ error: error.message });
+      }
+    } else {
+      // For SQLite, use transaction with individual updates
+      try {
+        await new Promise((resolve, reject) => {
+          this.db.serialize(() => {
+            this.db.run('BEGIN TRANSACTION');
+            
+            let completed = 0;
+            
+            properties.forEach((property, index) => {
+              const sql = `UPDATE properties SET 
+                          title = ?, description = ?, price = ?, 
+                          property_type = ?, bedrooms = ?, bathrooms = ?,
+                          parking_spaces = ?, location_city = ?, location_suburb = ?,
+                          updated_at = CURRENT_TIMESTAMP
+                        WHERE external_id = ? AND source_website = ?`;
+              
+              const params = [
+                property.title,
+                property.description,
+                property.price,
+                property.property_type,
+                property.bedrooms,
+                property.bathrooms,
+                property.parking_spaces,
+                property.location_city,
+                property.location_suburb,
+                property.external_id,
+                property.source_website
+              ];
+              
+              this.db.run(sql, params, function(err) {
+                completed++;
+                if (err) {
+                  errors.push({ property, error: err.message });
+                } else if (this.changes > 0) {
+                  updated++;
+                }
+                
+                if (completed === properties.length) {
+                  this.run('COMMIT', (commitErr) => {
+                    if (commitErr) {
+                      reject(commitErr);
+                    } else {
+                      resolve();
+                    }
+                  });
+                }
+              });
+            });
+          });
+        });
+      } catch (error) {
+        // Rollback on error
+        await new Promise((resolve) => {
+          this.db.run('ROLLBACK', () => resolve());
+        });
+        console.error('Batch update transaction failed:', error.message);
+        errors.push({ error: error.message });
+      }
+    }
+
+    return { updated, errors };
+  }
+
   /**
    * Deactivate a property by setting is_active to false
    * @param {number} propertyId
@@ -807,6 +1130,302 @@ class Database {
     ];
 
     return await this.run(sql, params);
+  }
+
+  /**
+   * Batch insert multiple rental properties in a single transaction
+   * @param {Array} properties - Array of rental property objects
+   * @returns {Promise<Object>} Result with insert statistics
+   */
+  async batchInsertRentalProperties(properties) {
+    if (!properties || properties.length === 0) {
+      return { inserted: 0, errors: [] };
+    }
+
+    const errors = [];
+    let inserted = 0;
+
+    if (this.isTurso) {
+      // For Turso, use batch transaction
+      const statements = properties.map(property => ({
+        sql: `INSERT OR REPLACE INTO rental_properties (
+                external_id, title, description, rental_price, rental_period,
+                deposit, lease_terms, available_date, furnished_status, utilities_included, pet_policy,
+                property_type, bedrooms, bathrooms, parking_spaces,
+                floor_area, erf_size, location_province, location_city,
+                location_suburb, location_address, latitude, longitude,
+                source_website, source_url, images, features,
+                agent_name, agent_phone, agent_email, listing_date
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        args: [
+          property.external_id,
+          property.title,
+          property.description,
+          property.rental_price,
+          property.rental_period || "monthly",
+          property.deposit,
+          property.lease_terms,
+          property.available_date,
+          property.furnished_status,
+          JSON.stringify(property.utilities_included || []),
+          property.pet_policy,
+          property.property_type,
+          property.bedrooms,
+          property.bathrooms,
+          property.parking_spaces,
+          property.floor_area,
+          property.erf_size,
+          property.location_province,
+          property.location_city,
+          property.location_suburb,
+          property.location_address,
+          property.latitude,
+          property.longitude,
+          property.source_website,
+          property.source_url,
+          JSON.stringify(property.images || []),
+          JSON.stringify(property.features || []),
+          property.agent_name,
+          property.agent_phone,
+          property.agent_email,
+          property.listing_date,
+        ]
+      }));
+
+      try {
+        // Sanitize all statement args before sending to Turso
+        const sanitizedStatements = statements.map(st => ({ sql: st.sql, args: this.sanitizeArgs(st.args) }));
+        const results = await this.db.batch(sanitizedStatements);
+        
+        // Count successful inserts - Turso returns rowsAffected for successful operations
+        inserted = 0;
+        results.forEach((result, index) => {
+          if (result && !result.error && (result.rowsAffected > 0 || result.changes > 0)) {
+            inserted++;
+          }
+        });
+        
+        // Collect errors
+        results.forEach((result, index) => {
+          if (result.error) {
+            errors.push({
+              property: properties[index],
+              error: result.error.message || 'Unknown error'
+            });
+          }
+        });
+      } catch (error) {
+        console.error('Batch insert rental properties failed:', error.message);
+        errors.push({ error: error.message });
+      }
+    } else {
+      // For SQLite, use transaction with individual inserts
+      try {
+        await new Promise((resolve, reject) => {
+          this.db.serialize(() => {
+            this.db.run('BEGIN TRANSACTION');
+            
+            let completed = 0;
+            
+            properties.forEach((property, index) => {
+              const sql = `INSERT OR REPLACE INTO rental_properties (
+                          external_id, title, description, rental_price, rental_period,
+                          deposit, lease_terms, available_date, furnished_status, utilities_included, pet_policy,
+                          property_type, bedrooms, bathrooms, parking_spaces,
+                          floor_area, erf_size, location_province, location_city,
+                          location_suburb, location_address, latitude, longitude,
+                          source_website, source_url, images, features,
+                          agent_name, agent_phone, agent_email, listing_date
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+              
+              const params = [
+                property.external_id,
+                property.title,
+                property.description,
+                property.rental_price,
+                property.rental_period || "monthly",
+                property.deposit,
+                property.lease_terms,
+                property.available_date,
+                property.furnished_status,
+                JSON.stringify(property.utilities_included || []),
+                property.pet_policy,
+                property.property_type,
+                property.bedrooms,
+                property.bathrooms,
+                property.parking_spaces,
+                property.floor_area,
+                property.erf_size,
+                property.location_province,
+                property.location_city,
+                property.location_suburb,
+                property.location_address,
+                property.latitude,
+                property.longitude,
+                property.source_website,
+                property.source_url,
+                JSON.stringify(property.images || []),
+                JSON.stringify(property.features || []),
+                property.agent_name,
+                property.agent_phone,
+                property.agent_email,
+                property.listing_date,
+              ];
+              
+              this.db.run(sql, params, function(err) {
+                completed++;
+                if (err) {
+                  errors.push({ property, error: err.message });
+                } else {
+                  inserted++;
+                }
+                
+                if (completed === properties.length) {
+                  this.run('COMMIT', (commitErr) => {
+                    if (commitErr) {
+                      reject(commitErr);
+                    } else {
+                      resolve();
+                    }
+                  });
+                }
+              });
+            });
+          });
+        });
+      } catch (error) {
+        // Rollback on error
+        await new Promise((resolve) => {
+          this.db.run('ROLLBACK', () => resolve());
+        });
+        console.error('Batch rental insert transaction failed:', error.message);
+        errors.push({ error: error.message });
+      }
+    }
+
+    return { inserted, errors };
+  }
+
+  /**
+   * Batch update multiple existing rental properties in a single transaction
+   * @param {Array} properties - Array of rental property objects with external_id for identification
+   * @returns {Promise<Object>} Result with update statistics
+   */
+  async batchUpdateRentalProperties(properties) {
+    if (!properties || properties.length === 0) {
+      return { updated: 0, errors: [] };
+    }
+
+    const errors = [];
+    let updated = 0;
+
+    if (this.isTurso) {
+      // For Turso, use batch transaction
+      const statements = properties.map(property => ({
+        sql: `UPDATE rental_properties SET 
+                title = ?, description = ?, rental_price = ?, rental_period = ?,
+                deposit = ?, lease_terms = ?, available_date = ?, furnished_status = ?,
+                utilities_included = ?, pet_policy = ?, property_type = ?, 
+                bedrooms = ?, bathrooms = ?, parking_spaces = ?, floor_area = ?,
+                location_city = ?, location_suburb = ?, updated_at = CURRENT_TIMESTAMP
+              WHERE external_id = ? AND source_website = ?`,
+        args: [
+          property.title, property.description, property.rental_price,
+          property.rental_period, property.deposit, property.lease_terms,
+          property.available_date, property.furnished_status,
+          JSON.stringify(property.utilities_included || []), property.pet_policy,
+          property.property_type, property.bedrooms, property.bathrooms,
+          property.parking_spaces, property.floor_area, property.location_city,
+          property.location_suburb, property.external_id, property.source_website
+        ]
+      }));
+
+      try {
+        // Sanitize all statement args before sending to Turso
+        const sanitizedStatements = statements.map(st => ({ sql: st.sql, args: this.sanitizeArgs(st.args) }));
+        const results = await this.db.batch(sanitizedStatements);
+        
+        // Count successful updates - Turso returns rowsAffected for successful operations
+        updated = 0;
+        results.forEach((result, index) => {
+          if (result && !result.error && (result.rowsAffected > 0 || result.changes > 0)) {
+            updated++;
+          }
+        });
+        
+        // Collect errors
+        results.forEach((result, index) => {
+          if (result.error) {
+            errors.push({
+              property: properties[index],
+              error: result.error.message || 'Unknown error'
+            });
+          }
+        });
+      } catch (error) {
+        console.error('Batch rental update failed:', error.message);
+        errors.push({ error: error.message });
+      }
+    } else {
+      // For SQLite, use transaction with individual updates
+      try {
+        await new Promise((resolve, reject) => {
+          this.db.serialize(() => {
+            this.db.run('BEGIN TRANSACTION');
+            
+            let completed = 0;
+            
+            properties.forEach((property, index) => {
+              const sql = `UPDATE rental_properties SET 
+                          title = ?, description = ?, rental_price = ?, rental_period = ?,
+                          deposit = ?, lease_terms = ?, available_date = ?, furnished_status = ?,
+                          utilities_included = ?, pet_policy = ?, property_type = ?, 
+                          bedrooms = ?, bathrooms = ?, parking_spaces = ?, floor_area = ?,
+                          location_city = ?, location_suburb = ?, updated_at = CURRENT_TIMESTAMP
+                        WHERE external_id = ? AND source_website = ?`;
+              
+              const params = [
+                property.title, property.description, property.rental_price,
+                property.rental_period, property.deposit, property.lease_terms,
+                property.available_date, property.furnished_status,
+                JSON.stringify(property.utilities_included || []), property.pet_policy,
+                property.property_type, property.bedrooms, property.bathrooms,
+                property.parking_spaces, property.floor_area, property.location_city,
+                property.location_suburb, property.external_id, property.source_website
+              ];
+              
+              this.db.run(sql, params, function(err) {
+                completed++;
+                if (err) {
+                  errors.push({ property, error: err.message });
+                } else if (this.changes > 0) {
+                  updated++;
+                }
+                
+                if (completed === properties.length) {
+                  this.run('COMMIT', (commitErr) => {
+                    if (commitErr) {
+                      reject(commitErr);
+                    } else {
+                      resolve();
+                    }
+                  });
+                }
+              });
+            });
+          });
+        });
+      } catch (error) {
+        // Rollback on error
+        await new Promise((resolve) => {
+          this.db.run('ROLLBACK', () => resolve());
+        });
+        console.error('Batch rental update transaction failed:', error.message);
+        errors.push({ error: error.message });
+      }
+    }
+
+    return { updated, errors };
   }
 
   async getRentalProperties(filters = {}, limit = 50, offset = 0) {
@@ -1348,12 +1967,31 @@ class SQLiteAdapter {
 }
 
 class TursoAdapter {
+  sanitizeValue(value) {
+    if (value === undefined) return null;
+    if (value === null) return null;
+    if (value instanceof Date) return value.toISOString();
+    const t = typeof value;
+    if (t === 'boolean') return value ? 1 : 0;
+    if (t === 'bigint') return Number(value);
+    if (value instanceof Uint8Array || (typeof Buffer !== 'undefined' && Buffer.isBuffer?.(value))) {
+      return value;
+    }
+    if (t === 'object') {
+      try { return JSON.stringify(value); } catch { return String(value); }
+    }
+    return value;
+  }
+
+  sanitizeArgs(args = []) {
+    return Array.isArray(args) ? args.map((v) => this.sanitizeValue(v)) : [];
+  }
   constructor(db) {
     this.db = db;
   }
 
   async query(sql, params = []) {
-    const result = await this.db.execute({ sql, args: params });
+const result = await this.db.execute({ sql, args: this.sanitizeArgs(params) });
     return result.rows.map(row => {
       const obj = {};
       result.columns.forEach((col, index) => {
@@ -1366,7 +2004,7 @@ class TursoAdapter {
   }
 
   async run(sql, params = []) {
-    const result = await this.db.execute({ sql, args: params });
+const result = await this.db.execute({ sql, args: this.sanitizeArgs(params) });
     return {
       id: result.lastInsertRowid ? Number(result.lastInsertRowid) : null,
       changes: result.rowsAffected || 0
@@ -1374,7 +2012,7 @@ class TursoAdapter {
   }
 
   async get(sql, params = []) {
-    const result = await this.db.execute({ sql, args: params });
+const result = await this.db.execute({ sql, args: this.sanitizeArgs(params) });
     if (result.rows.length === 0) {
       return undefined;
     }
