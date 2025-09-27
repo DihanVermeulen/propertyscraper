@@ -96,6 +96,12 @@ export const propertiesApi = {
     const response = await api.get("/api/time-on-market", { params: filters });
     return response.data;
   },
+
+  // Get cache timestamp for invalidation
+  getCacheTimestamp: async (): Promise<{ last_updated: string; timestamp: number }> => {
+    const response = await api.get("/api/cache-timestamp");
+    return response.data;
+  },
 };
 
 // RENTAL PROPERTIES API

@@ -1,9 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
-import { propertiesApi, rentalPropertiesApi } from '../../lib/api';
+import { useSmartPropertiesQuery, useSmartRentalPropertiesQuery } from '../../hooks/useSmartCache';
 import PropertyCard from '../../components/listings/PropertyCard';
 import RentalPropertyCard from '../../components/listings/RentalPropertyCard';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
@@ -24,19 +23,11 @@ export default function ListingsPage() {
     offset: 0,
   });
 
-  // Sale Properties Query
-  const { data: saleData, isLoading: saleLoading, error: saleError } = useQuery({
-    queryKey: ['properties-for-sale', saleFilters],
-    queryFn: () => propertiesApi.getProperties(saleFilters),
-    staleTime: 60 * 60 * 1000, // 1 hour
-  });
+  // Sale Properties Query with Smart Caching
+  const { data: saleData, isLoading: saleLoading, error: saleError } = useSmartPropertiesQuery(saleFilters);
 
-  // Rental Properties Query
-  const { data: rentalData, isLoading: rentalLoading, error: rentalError } = useQuery({
-    queryKey: ['rental-properties', rentalFilters],
-    queryFn: () => rentalPropertiesApi.getRentalProperties(rentalFilters),
-    staleTime: 60 * 60 * 1000, // 1 hour
-  });
+  // Rental Properties Query with Smart Caching
+  const { data: rentalData, isLoading: rentalLoading, error: rentalError } = useSmartRentalPropertiesQuery(rentalFilters);
 
   const handleSaleFilterChange = (newFilters: Partial<IPropertyFilters>) => {
     setSaleFilters(prev => ({

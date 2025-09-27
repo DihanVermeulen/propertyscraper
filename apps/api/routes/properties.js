@@ -182,6 +182,36 @@ router.get('/price-history', ...requireAuth, async (req, res) => {
     }
 });
 
+// Get last update timestamps for cache invalidation
+router.get('/cache-timestamp', async (req, res) => {
+    try {
+        // Get the maximum updated_at timestamp from all relevant tables
+        const queries = [
+            database.get('SELECT MAX(updated_at) as max_updated_at FROM properties WHERE is_active = 1'),
+            database.get('SELECT MAX(updated_at) as max_updated_at FROM rental_properties WHERE is_active = 1'),
+            database.get('SELECT MAX(updated_at) as max_updated_at FROM property_expenses')
+        ];
+        
+        const results = await Promise.all(queries);
+        
+        // Find the latest timestamp across all tables
+        const timestamps = results
+            .map(result => result?.max_updated_at)
+            .filter(timestamp => timestamp) // Filter out null/undefined values
+            .map(timestamp => new Date(timestamp).getTime());
+        
+        const lastUpdated = timestamps.length > 0 ? Math.max(...timestamps) : Date.now();
+        
+        res.json({
+            last_updated: new Date(lastUpdated).toISOString(),
+            timestamp: lastUpdated
+        });
+    } catch (error) {
+        console.error('Error fetching cache timestamp:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
 // Get time on market statistics (require authentication)
 router.get('/time-on-market', ...requireAuth, async (req, res) => {
     try {
