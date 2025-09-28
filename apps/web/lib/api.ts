@@ -188,6 +188,50 @@ export const investorApi = {
     const response = await api.post("/api/investor/expenses", expenses);
     return response.data;
   },
+
+  // YIELD CALCULATOR API
+  // Get property expenses for yield calculator
+  getYieldCalculatorExpenses: async (propertyId: number): Promise<any> => {
+    const response = await api.get(`/api/yield-calculator/property-expenses/${propertyId}`);
+    return response.data;
+  },
+
+  // Save property expenses for yield calculator
+  saveYieldCalculatorExpenses: async (propertyId: number, expenses: any): Promise<any> => {
+    const response = await api.put(`/api/yield-calculator/property-expenses/${propertyId}`, {
+      ...expenses,
+      data_source: 'user_input'
+    });
+    return response.data;
+  },
+
+  // Calculate yield
+  calculateYield: async (calculationData: {
+    propertyId: number;
+    purchasePrice: number;
+    depositAmount: number;
+    depositPercentage: number;
+    interestRate: number;
+    loanTermMonths: number;
+    monthlyLevies: number;
+    monthlyRates: number;
+    monthlyInsurance: number;
+    monthlyMaintenance: number;
+    estimatedMonthlyRental: number;
+    vacancyFactor: number;
+    calculationName: string;
+    notes?: string | null;
+    userId?: number | null;
+  }): Promise<any> => {
+    const response = await api.post('/api/yield-calculator/calculate-yield', calculationData);
+    return response.data;
+  },
+
+  // Save calculation
+  saveYieldCalculation: async (calculationData: any): Promise<any> => {
+    const response = await api.post('/api/yield-calculator/save-calculation', calculationData);
+    return response.data;
+  },
 };
 
 export const scraperApi = {

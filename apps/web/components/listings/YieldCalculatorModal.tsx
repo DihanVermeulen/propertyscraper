@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Dialog,
   DialogContent,
@@ -25,6 +26,7 @@ import {
 } from 'lucide-react';
 import { Alert, AlertDescription } from '../ui/alert';
 import { IProperty } from '@app-types/property';
+import { investorApi } from '../../lib/api';
 
 interface PropertyExpenses {
   municipal_rates: number;
@@ -52,15 +54,62 @@ interface YieldCalculatorModalProps {
 }
 
 export default function YieldCalculatorModal({ property, isOpen, onClose }: YieldCalculatorModalProps) {
-  const [expenses, setExpenses] = useState<PropertyExpenses | null>(null);
-  const [isLoadingExpenses, setIsLoadingExpenses] = useState(false);
-  const [expensesError, setExpensesError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
   const [isEditingExpenses, setIsEditingExpenses] = useState(false);
   const [editableExpenses, setEditableExpenses] = useState<PropertyExpenses>({} as PropertyExpenses);
-  const [isCalculating, setIsCalculating] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [calculationResult, setCalculationResult] = useState<CalculationResult | null>(null);
-  const [calculationError, setCalculationError] = useState<string | null>(null);
+
+  // React Query for expenses
+  const {
+    data: expensesData,
+    isLoading: isLoadingExpenses,
+    error: expensesError,
+    refetch: refetchExpenses
+  } = useQuery({
+    queryKey: ['yieldCalculatorExpenses', property.id],
+    queryFn: () => investorApi.getYieldCalculatorExpenses(property.id),
+    enabled: isOpen && !!property.id,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // Extract expenses from query data
+  const expenses = expensesData?.expenses || null;
+
+  // Mutation for saving expenses
+  const saveExpensesMutation = useMutation({
+    mutationFn: (expenses: PropertyExpenses) => investorApi.saveYieldCalculatorExpenses(property.id, expenses),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['yieldCalculatorExpenses', property.id] });
+      setIsEditingExpenses(false);
+    },
+    onError: (error) => {
+      console.error('Error saving expenses:', error);
+      alert('Failed to save expenses. Please try again.');
+    },
+  });
+
+  // Mutation for calculating yield
+  const calculateYieldMutation = useMutation({
+    mutationFn: (calculationData: any) => investorApi.calculateYield(calculationData),
+    onSuccess: (data) => {
+      setCalculationResult(data.summary);
+    },
+    onError: (error) => {
+      console.error('Error calculating yield:', error);
+    },
+  });
+
+  // Mutation for saving calculation
+  const saveCalculationMutation = useMutation({
+    mutationFn: (calculationData: any) => investorApi.saveYieldCalculation(calculationData),
+    onSuccess: () => {
+      alert('Calculation saved successfully!');
+    },
+    onError: (error) => {
+      console.error('Error saving calculation:', error);
+      alert('Failed to save calculation: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    },
+  });
 
   // Form inputs
   const [purchasePrice, setPurchasePrice] = useState(property.price || 0);
@@ -77,23 +126,45 @@ export default function YieldCalculatorModal({ property, isOpen, onClose }: Yiel
     setDepositAmount(Math.round(purchasePrice * (depositPercentage?.[0] || 0) / 100));
   }, [purchasePrice, depositPercentage]);
 
-  // Load expenses on mount
+  // Initialize editable expenses when expenses data changes
   useEffect(() => {
-    if (isOpen && property.id) {
-      loadExpenses();
+    if (expenses) {
+      if (expenses.municipal_rates > 0 || expenses.body_corporate_levies > 0 || 
+          expenses.insurance_estimate > 0 || expenses.maintenance_reserve > 0) {
+        // We have meaningful expense data
+        setEditableExpenses(expenses);
+        setIsEditingExpenses(false); // Show existing data, not in edit mode
+      } else {
+        // No pre-scraped expenses available, provide default values for manual input
+        const defaultExpenses = {
+          municipal_rates: 0,
+          body_corporate_levies: 0,
+          insurance_estimate: 0,
+          maintenance_reserve: 0,
+          data_source: 'user_input'
+        };
+        setEditableExpenses(defaultExpenses);
+        setIsEditingExpenses(true); // Start in edit mode if no data
+      }
+    } else if (expensesError) {
+      // Set default expenses on error and enable editing
+      const defaultExpenses = {
+        municipal_rates: 0,
+        body_corporate_levies: 0,
+        insurance_estimate: 0,
+        maintenance_reserve: 0,
+        data_source: 'user_input'
+      };
+      setEditableExpenses(defaultExpenses);
+      setIsEditingExpenses(true);
     }
-  }, [isOpen, property.id]);
+  }, [expenses, expensesError]);
 
   // Clean up state when modal closes
   useEffect(() => {
     if (!isOpen) {
-      // Reset calculation result and errors when modal closes
+      // Reset calculation result when modal closes
       setCalculationResult(null);
-      setCalculationError(null);
-      setExpensesError(null);
-      setIsCalculating(false);
-      setIsSaving(false);
-      setIsLoadingExpenses(false);
       
       // Ensure body scroll is restored
       document.body.style.overflow = '';
@@ -110,93 +181,14 @@ export default function YieldCalculatorModal({ property, isOpen, onClose }: Yiel
     };
   }, []);
 
-  const loadExpenses = async () => {
-    setIsLoadingExpenses(true);
-    setExpensesError(null);
-    
-    try {
-      const response = await fetch(`/api/yield-calculator/property-expenses/${property.id}`);
-      
-      if (!response.ok) {
-        throw new Error(`Failed to load expenses: ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      
-      if (data.expenses && (data.expenses.municipal_rates > 0 || data.expenses.body_corporate_levies > 0 || 
-                           data.expenses.insurance_estimate > 0 || data.expenses.maintenance_reserve > 0)) {
-        // We have meaningful expense data
-        setExpenses(data.expenses);
-        setEditableExpenses(data.expenses);
-        setIsEditingExpenses(false); // Show existing data, not in edit mode
-      } else {
-        // No pre-scraped expenses available, provide default values for manual input
-        const defaultExpenses = {
-          municipal_rates: 0,
-          body_corporate_levies: 0,
-          insurance_estimate: 0,
-          maintenance_reserve: 0,
-          data_source: 'user_input'
-        };
-        setExpenses(defaultExpenses);
-        setEditableExpenses(defaultExpenses);
-        setIsEditingExpenses(true); // Start in edit mode if no data
-      }
-    } catch (error) {
-      console.error('Error loading expenses:', error);
-      setExpensesError(error instanceof Error ? error.message : 'Failed to load expenses');
-      
-      // Set default expenses on error and enable editing
-      const defaultExpenses = {
-        municipal_rates: 0,
-        body_corporate_levies: 0,
-        insurance_estimate: 0,
-        maintenance_reserve: 0,
-        data_source: 'user_input'
-      };
-      setExpenses(defaultExpenses);
-      setEditableExpenses(defaultExpenses);
-      setIsEditingExpenses(true);
-    } finally {
-      setIsLoadingExpenses(false);
-    }
-  };
-  
   const handleEditExpenses = () => {
     setIsEditingExpenses(true);
   };
-  
-  const handleSaveExpenses = async () => {
-    try {
-      // Save the expenses to the database
-      const response = await fetch(`/api/yield-calculator/property-expenses/${property.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...editableExpenses,
-          data_source: 'user_input'
-        }),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to save expenses');
-      }
-      
-      // Update the local state
-      const updatedExpenses = {
-        ...editableExpenses,
-        data_source: 'user_input'
-      };
-      setExpenses(updatedExpenses);
-      setIsEditingExpenses(false);
-    } catch (error) {
-      console.error('Error saving expenses:', error);
-      alert('Failed to save expenses. Please try again.');
-    }
+
+  const handleSaveExpenses = () => {
+    saveExpensesMutation.mutate(editableExpenses);
   };
-  
+
   const handleCancelEditExpenses = () => {
     // Reset to original values
     setEditableExpenses(expenses || {
@@ -209,106 +201,61 @@ export default function YieldCalculatorModal({ property, isOpen, onClose }: Yiel
     setIsEditingExpenses(false);
   };
 
-  const calculateYield = async () => {
+  const calculateYield = () => {
     if (!expenses) return;
-    
-    setIsCalculating(true);
-    setCalculationError(null);
-    
-    try {
-      const requestBody = {
-        propertyId: property.id,
-        purchasePrice,
-        depositAmount,
-        depositPercentage: depositPercentage?.[0] || 0,
-        interestRate: interestRate?.[0] || 0,
-        loanTermMonths: (loanTermYears?.[0] || 0) * 12,
-        monthlyLevies: expenses.body_corporate_levies || 0,
-        monthlyRates: expenses.municipal_rates || 0,
-        monthlyInsurance: expenses.insurance_estimate || 0,
-        monthlyMaintenance: expenses.maintenance_reserve || 0,
-        estimatedMonthlyRental,
-        vacancyFactor: vacancyFactor[0],
-        calculationName: calculationName || `Calculation ${new Date().toLocaleDateString()}`,
-        notes: null,
-        userId: null
-      };
-      
-      const response = await fetch('/api/yield-calculator/calculate-yield', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Calculation failed: ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      setCalculationResult(data.summary);
-    } catch (error) {
-      console.error('Error calculating yield:', error);
-      setCalculationError(error instanceof Error ? error.message : 'Calculation failed');
-    } finally {
-      setIsCalculating(false);
-    }
+
+    const requestBody = {
+      propertyId: property.id,
+      purchasePrice,
+      depositAmount,
+      depositPercentage: depositPercentage?.[0] || 0,
+      interestRate: interestRate?.[0] || 0,
+      loanTermMonths: (loanTermYears?.[0] || 0) * 12,
+      monthlyLevies: expenses.body_corporate_levies || 0,
+      monthlyRates: expenses.municipal_rates || 0,
+      monthlyInsurance: expenses.insurance_estimate || 0,
+      monthlyMaintenance: expenses.maintenance_reserve || 0,
+      estimatedMonthlyRental,
+      vacancyFactor: vacancyFactor[0],
+      calculationName: calculationName || `Calculation ${new Date().toLocaleDateString()}`,
+      notes: null,
+      userId: null
+    };
+
+    calculateYieldMutation.mutate(requestBody);
   };
 
-  const saveCalculation = async () => {
+  const saveCalculation = () => {
     if (!calculationResult || !expenses) return;
-    
-    setIsSaving(true);
-    
-    try {
-      const calculationData = {
-        property_id: property.id,
-        user_id: null,
-        purchase_price: purchasePrice,
-        deposit_amount: depositAmount,
-        deposit_percentage: depositPercentage?.[0] || 0,
-        loan_amount: purchasePrice - depositAmount,
-        interest_rate: interestRate?.[0] || 0,
-        loan_term_months: (loanTermYears?.[0] || 0) * 12,
-        monthly_repayment: Math.round(calculationResult.totalMonthlyExpenses - (expenses.body_corporate_levies || 0) - (expenses.municipal_rates || 0) - (expenses.insurance_estimate || 0) - (expenses.maintenance_reserve || 0)),
-        monthly_levies: expenses.body_corporate_levies || 0,
-        monthly_rates: expenses.municipal_rates || 0,
-        monthly_insurance: expenses.insurance_estimate || 0,
-        monthly_maintenance: expenses.maintenance_reserve || 0,
-        estimated_monthly_rental: estimatedMonthlyRental,
-        vacancy_factor: vacancyFactor[0],
-        monthly_rental_income: calculationResult.monthlyRentalIncome,
-        total_monthly_expenses: calculationResult.totalMonthlyExpenses,
-        monthly_cash_flow: calculationResult.monthlyCashFlow,
-        annual_cash_flow: calculationResult.annualCashFlow,
-        gross_rental_yield: calculationResult.grossRentalYield,
-        net_rental_yield: calculationResult.netRentalYield,
-        cash_on_cash_return: calculationResult.cashOnCashReturn,
-        calculation_name: calculationName || `Calculation ${new Date().toLocaleDateString()}`,
-        notes: null
-      };
-      
-      const response = await fetch('/api/yield-calculator/save-calculation', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(calculationData),
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Failed to save calculation: ${response.statusText}`);
-      }
-      
-      // Show success message or close modal
-      alert('Calculation saved successfully!');
-    } catch (error) {
-      console.error('Error saving calculation:', error);
-      alert('Failed to save calculation: ' + (error instanceof Error ? error.message : 'Unknown error'));
-    } finally {
-      setIsSaving(false);
-    }
+
+    const calculationData = {
+      property_id: property.id,
+      user_id: null,
+      purchase_price: purchasePrice,
+      deposit_amount: depositAmount,
+      deposit_percentage: depositPercentage?.[0] || 0,
+      loan_amount: purchasePrice - depositAmount,
+      interest_rate: interestRate?.[0] || 0,
+      loan_term_months: (loanTermYears?.[0] || 0) * 12,
+      monthly_repayment: Math.round(calculationResult.totalMonthlyExpenses - (expenses.body_corporate_levies || 0) - (expenses.municipal_rates || 0) - (expenses.insurance_estimate || 0) - (expenses.maintenance_reserve || 0)),
+      monthly_levies: expenses.body_corporate_levies || 0,
+      monthly_rates: expenses.municipal_rates || 0,
+      monthly_insurance: expenses.insurance_estimate || 0,
+      monthly_maintenance: expenses.maintenance_reserve || 0,
+      estimated_monthly_rental: estimatedMonthlyRental,
+      vacancy_factor: vacancyFactor[0],
+      monthly_rental_income: calculationResult.monthlyRentalIncome,
+      total_monthly_expenses: calculationResult.totalMonthlyExpenses,
+      monthly_cash_flow: calculationResult.monthlyCashFlow,
+      annual_cash_flow: calculationResult.annualCashFlow,
+      gross_rental_yield: calculationResult.grossRentalYield,
+      net_rental_yield: calculationResult.netRentalYield,
+      cash_on_cash_return: calculationResult.cashOnCashReturn,
+      calculation_name: calculationName || `Calculation ${new Date().toLocaleDateString()}`,
+      notes: null
+    };
+
+    saveCalculationMutation.mutate(calculationData);
   };
 
   const formatCurrency = (amount: number) => {
@@ -376,7 +323,11 @@ export default function YieldCalculatorModal({ property, isOpen, onClose }: Yiel
                         <Button
                           size="sm"
                           onClick={handleSaveExpenses}
+                          disabled={saveExpensesMutation.isPending}
                         >
+                          {saveExpensesMutation.isPending ? (
+                            <LoaderIcon className="h-4 w-4 animate-spin mr-2" />
+                          ) : null}
                           Save
                         </Button>
                       </>
@@ -388,7 +339,9 @@ export default function YieldCalculatorModal({ property, isOpen, onClose }: Yiel
                 {expensesError && (
                   <Alert variant="destructive">
                     <AlertCircleIcon className="h-4 w-4" />
-                    <AlertDescription>{expensesError}</AlertDescription>
+                    <AlertDescription>
+                      {expensesError instanceof Error ? expensesError.message : 'Failed to load expenses'}
+                    </AlertDescription>
                   </Alert>
                 )}
                 
@@ -595,10 +548,10 @@ export default function YieldCalculatorModal({ property, isOpen, onClose }: Yiel
             <div className="flex space-x-3">
               <Button 
                 onClick={calculateYield} 
-                disabled={isCalculating || !estimatedMonthlyRental || !expenses}
+                disabled={calculateYieldMutation.isPending || !estimatedMonthlyRental || !expenses}
                 className="flex-1"
               >
-                {isCalculating ? (
+                {calculateYieldMutation.isPending ? (
                   <LoaderIcon className="h-4 w-4 animate-spin mr-2" />
                 ) : (
                   <CalculatorIcon className="h-4 w-4 mr-2" />
@@ -610,10 +563,12 @@ export default function YieldCalculatorModal({ property, isOpen, onClose }: Yiel
 
           {/* Right Column - Results */}
           <div className="space-y-6">
-            {calculationError && (
+            {calculateYieldMutation.error && (
               <Alert variant="destructive">
                 <AlertCircleIcon className="h-4 w-4" />
-                <AlertDescription>{calculationError}</AlertDescription>
+                <AlertDescription>
+                  {calculateYieldMutation.error instanceof Error ? calculateYieldMutation.error.message : 'Calculation failed'}
+                </AlertDescription>
               </Alert>
             )}
 
@@ -704,10 +659,10 @@ export default function YieldCalculatorModal({ property, isOpen, onClose }: Yiel
                   <CardContent>
                     <Button 
                       onClick={saveCalculation} 
-                      disabled={isSaving}
+                      disabled={saveCalculationMutation.isPending}
                       className="w-full"
                     >
-                      {isSaving ? (
+                      {saveCalculationMutation.isPending ? (
                         <LoaderIcon className="h-4 w-4 animate-spin mr-2" />
                       ) : (
                         <SaveIcon className="h-4 w-4 mr-2" />
